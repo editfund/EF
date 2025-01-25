@@ -28,6 +28,7 @@ type UploadRepoFileOptions struct {
 	Author       *IdentityOptions
 	Committer    *IdentityOptions
 	Files        []string // In UUID format.
+	FullPaths    []string
 	Signoff      bool
 }
 
@@ -56,6 +57,10 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 		return nil
 	}
 
+	if len(opts.Files) != len(opts.FullPaths) {
+		return nil
+	}
+
 	uploads, err := repo_model.GetUploadsByUUIDs(ctx, opts.Files)
 	if err != nil {
 		return fmt.Errorf("GetUploadsByUUIDs [uuids: %v]: %w", opts.Files, err)
@@ -65,6 +70,7 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	infos := make([]uploadInfo, len(uploads))
 	for i, upload := range uploads {
 		// Check file is not lfs locked, will return nil if lock setting not enabled
+		upload.Name = opts.FullPaths[i]
 		filepath := path.Join(opts.TreePath, upload.Name)
 		lfsLock, err := git_model.GetTreePathLock(ctx, repo.ID, filepath)
 		if err != nil {
