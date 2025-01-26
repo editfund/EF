@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"errors"
 
 	"code.gitea.io/gitea/models"
 	git_model "code.gitea.io/gitea/models/git"
@@ -56,6 +57,7 @@ type ChangeRepoFilesOptions struct {
 	Committer    *IdentityOptions
 	Dates        *CommitDateOptions
 	Signoff      bool
+	IsDir        bool `default:"false"`
 }
 
 type RepoFileOptions struct {
@@ -91,33 +93,64 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	var treePaths []string
-	for _, file := range opts.Files {
-		// If FromTreePath is not set, set it to the opts.TreePath
-		if file.TreePath != "" && file.FromTreePath == "" {
-			file.FromTreePath = file.TreePath
+	if opts.IsDir {
+	    var newFiles []*ChangeRepoFile
+	    for _, file := range opts.Files {
+		if file.Operation != "delete" {
+		    return nil, errors.New("invalid operation: only delete is allowed for directory paths")
 		}
+    		// Clean up and validate paths
+    		treePath := CleanUploadFileName(file.TreePath)
+    		if treePath == "" {
+        	    return nil, models.ErrFilenameInvalid{
+            		Path: file.TreePath,
+        	    }
+    		}
+        	dirFiles, err := ListFilesInDirectory(ctx, gitRepo, treePath)
+        	if err != nil {
+            	    return nil, err
+        	}
+		for _, dirFile := range dirFiles {
+    		    treePaths = append(treePaths, dirFile)
+    		    newFiles = append(newFiles, &ChangeRepoFile{
+        		TreePath:  dirFile,
+        		Options: &RepoFileOptions{
+            		    treePath:     dirFile,
+            		    fromTreePath: "",
+            		    executable:   false,
+        		},
+    		    })
+		}
+	    }
+	    opts.Files = newFiles
+	} else {
+    	    for _, file := range opts.Files {
+            	    // If FromTreePath is not set, set it to the opts.TreePath
+            	    if file.TreePath != "" && file.FromTreePath == "" {
+                    	    file.FromTreePath = file.TreePath
+            	    }
+		    // Check that the path given in opts.treePath is valid (not a git path)
+            	    treePath := CleanUploadFileName(file.TreePath)
+            	    if treePath == "" {
+                    	    return nil, models.ErrFilenameInvalid{
+                            	    Path: file.TreePath,
+                    	    }
+            	    }
+            	    // If there is a fromTreePath (we are copying it), also clean it up
+            	    fromTreePath := CleanUploadFileName(file.FromTreePath)
+		    if fromTreePath == "" && file.FromTreePath != "" {
+                    	    return nil, models.ErrFilenameInvalid{
+                                Path: file.FromTreePath,
+                	    }
+            	    }
 
-		// Check that the path given in opts.treePath is valid (not a git path)
-		treePath := CleanUploadFileName(file.TreePath)
-		if treePath == "" {
-			return nil, models.ErrFilenameInvalid{
-				Path: file.TreePath,
-			}
-		}
-		// If there is a fromTreePath (we are copying it), also clean it up
-		fromTreePath := CleanUploadFileName(file.FromTreePath)
-		if fromTreePath == "" && file.FromTreePath != "" {
-			return nil, models.ErrFilenameInvalid{
-				Path: file.FromTreePath,
-			}
-		}
-
-		file.Options = &RepoFileOptions{
-			treePath:     treePath,
-			fromTreePath: fromTreePath,
-			executable:   false,
-		}
-		treePaths = append(treePaths, treePath)
+            	    file.Options = &RepoFileOptions{
+                	    treePath:     treePath,
+                	    fromTreePath: fromTreePath,
+                	    executable:   false,
+            	    }
+            	    treePaths = append(treePaths, treePath)
+    	    }
 	}
 
 	// A NewBranch can be specified for the file to be created/updated in a new branch.
@@ -274,6 +307,35 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	return filesResponse, nil
+}
+
+
+// Helper function to recursively list files in a directory
+func ListFilesInDirectory(ctx context.Context, gitRepo *git.Repository, dirPath string) ([]string, error) {
+    var files []string
+//
+//    // Implement recursive directory traversal
+//    // This would use gitRepo methods to list files
+//    // For example:
+//    commit, err := gitRepo.GetBranchCommit(gitRepo.DefaultBranch)
+//    if err != nil {
+//        return nil, err
+//    }
+
+//    tree, err := commit.SubTree(dirPath)
+//    if err != nil {
+//        return nil, err
+//    }
+//
+//    err = tree.Walk(func(path string, entry *git.TreeEntry) error {
+//        if entry.Type == git.EntryBlob {
+//            files = append(files, filepath.Join(dirPath, path))
+//        }
+//        return nil
+//    })
+
+//    return files, err
+    return files, nil
 }
 
 // handles the check for various issues for ChangeRepoFiles
