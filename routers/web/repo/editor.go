@@ -628,12 +628,6 @@ func DeleteFilePost(ctx *context.Context) {
 	redirectForCommitChoice(ctx, form.CommitChoice, branchName, treePath)
 }
 
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-// ---------------------------------------------------------
-
-
 // DeletePath render delete file page
 func DeletePath(ctx *context.Context) {
 	ctx.Data["PageIsDelete"] = true
@@ -663,15 +657,145 @@ func DeletePath(ctx *context.Context) {
 
 // DeletePathPost response for deleting file
 func DeletePathPost(ctx *context.Context) {
-    log.Error("NOT IMPLEMENTED. YET!!")
-    return
+
+	form := web.GetForm(ctx).(*forms.DeleteRepoFileForm)
+	canCommit := renderCommitRights(ctx)
+	branchName := ctx.Repo.BranchName
+	if form.CommitChoice == frmCommitChoiceNewBranch {
+		branchName = form.NewBranchName
+	}
+
+	ctx.Data["PageIsDelete"] = true
+	ctx.Data["BranchLink"] = ctx.Repo.RepoLink + "/src/" + ctx.Repo.BranchNameSubURL()
+	ctx.Data["TreePath"] = ctx.Repo.TreePath
+	ctx.Data["commit_summary"] = form.CommitSummary
+	ctx.Data["commit_message"] = form.CommitMessage
+	ctx.Data["commit_choice"] = form.CommitChoice
+	ctx.Data["new_branch_name"] = form.NewBranchName
+	ctx.Data["last_commit"] = ctx.Repo.CommitID
+
+	if ctx.HasError() {
+		ctx.HTML(http.StatusOK, tplDeleteFile)
+		return
+	}
+
+	if branchName == ctx.Repo.BranchName && !canCommit {
+		ctx.Data["Err_NewBranchName"] = true
+		ctx.Data["commit_choice"] = frmCommitChoiceNewBranch
+		ctx.RenderWithErr(ctx.Tr("repo.editor.cannot_commit_to_protected_branch", branchName), tplDeleteFile, &form)
+		return
+	}
+
+	message := strings.TrimSpace(form.CommitSummary)
+	if len(message) == 0 {
+		message = ctx.Locale.TrString("repo.editor.delete", ctx.Repo.TreePath)
+	}
+	form.CommitMessage = strings.TrimSpace(form.CommitMessage)
+	if len(form.CommitMessage) > 0 {
+		message += "\n\n" + form.CommitMessage
+	}
+
+	gitIdentity := getGitIdentity(ctx, form.CommitMailID, tplDeleteFile, &form)
+	if ctx.Written() {
+		return
+	}
+
+	if _, err := files_service.ChangeRepoFiles(ctx, ctx.Repo.Repository, ctx.Doer, &files_service.ChangeRepoFilesOptions{
+		LastCommitID: form.LastCommit,
+		OldBranch:    ctx.Repo.BranchName,
+		NewBranch:    branchName,
+		Files: []*files_service.ChangeRepoFile{
+			{
+				Operation: "delete",
+				TreePath:  ctx.Repo.TreePath,
+			},
+		},
+		IsDir:     true, // Add this flag to indicate directory deletion
+		Message:   message,
+		Signoff:   form.Signoff,
+		Author:    gitIdentity,
+		Committer: gitIdentity,
+	}); err != nil {
+		// This is where we handle all the errors thrown by repofiles.DeleteRepoFile
+		if git.IsErrNotExist(err) || models.IsErrRepoFileDoesNotExist(err) {
+			ctx.RenderWithErr(ctx.Tr("repo.editor.file_deleting_no_longer_exists", ctx.Repo.TreePath), tplDeleteFile, &form)
+		} else if models.IsErrFilenameInvalid(err) {
+			ctx.Data["Err_TreePath"] = true
+			ctx.RenderWithErr(ctx.Tr("repo.editor.filename_is_invalid", ctx.Repo.TreePath), tplDeleteFile, &form)
+		} else if models.IsErrFilePathInvalid(err) {
+			ctx.Data["Err_TreePath"] = true
+			if fileErr, ok := err.(models.ErrFilePathInvalid); ok {
+				switch fileErr.Type {
+				case git.EntryModeSymlink:
+					ctx.RenderWithErr(ctx.Tr("repo.editor.file_is_a_symlink", fileErr.Path), tplDeleteFile, &form)
+				case git.EntryModeTree:
+					ctx.RenderWithErr(ctx.Tr("repo.editor.filename_is_a_directory", fileErr.Path), tplDeleteFile, &form)
+				case git.EntryModeBlob:
+					ctx.RenderWithErr(ctx.Tr("repo.editor.directory_is_a_file", fileErr.Path), tplDeleteFile, &form)
+				default:
+					ctx.ServerError("DeleteRepoFile", err)
+				}
+			} else {
+				ctx.ServerError("DeleteRepoFile", err)
+			}
+		} else if git.IsErrBranchNotExist(err) {
+			// For when a user deletes a file to a branch that no longer exists
+			if branchErr, ok := err.(git.ErrBranchNotExist); ok {
+				ctx.RenderWithErr(ctx.Tr("repo.editor.branch_does_not_exist", branchErr.Name), tplDeleteFile, &form)
+			} else {
+				ctx.Error(http.StatusInternalServerError, err.Error())
+			}
+		} else if git_model.IsErrBranchAlreadyExists(err) {
+			// For when a user specifies a new branch that already exists
+			if branchErr, ok := err.(git_model.ErrBranchAlreadyExists); ok {
+				ctx.RenderWithErr(ctx.Tr("repo.editor.branch_already_exists", branchErr.BranchName), tplDeleteFile, &form)
+			} else {
+				ctx.Error(http.StatusInternalServerError, err.Error())
+			}
+		} else if models.IsErrCommitIDDoesNotMatch(err) || git.IsErrPushOutOfDate(err) {
+			ctx.RenderWithErr(ctx.Tr("repo.editor.file_changed_while_deleting", ctx.Repo.RepoLink+"/compare/"+util.PathEscapeSegments(form.LastCommit)+"..."+util.PathEscapeSegments(ctx.Repo.CommitID)), tplDeleteFile, &form)
+		} else if git.IsErrPushRejected(err) {
+			errPushRej := err.(*git.ErrPushRejected)
+			if len(errPushRej.Message) == 0 {
+				ctx.RenderWithErr(ctx.Tr("repo.editor.push_rejected_no_message"), tplDeleteFile, &form)
+			} else {
+				flashError, err := ctx.RenderToHTML(tplAlertDetails, map[string]any{
+					"Message": ctx.Tr("repo.editor.push_rejected"),
+					"Summary": ctx.Tr("repo.editor.push_rejected_summary"),
+					"Details": utils.SanitizeFlashErrorString(errPushRej.Message),
+				})
+				if err != nil {
+					ctx.ServerError("DeleteFilePost.HTMLString", err)
+					return
+				}
+				ctx.RenderWithErr(flashError, tplDeleteFile, &form)
+			}
+		} else {
+			ctx.ServerError("DeleteRepoFile", err)
+		}
+		return
+	}
+
+	ctx.Flash.Success(ctx.Tr("repo.editor.file_delete_success", ctx.Repo.TreePath))
+	treePath := path.Dir(ctx.Repo.TreePath)
+	if treePath == "." {
+		treePath = "" // the file deleted was in the root, so we return the user to the root directory
+	}
+	if len(treePath) > 0 {
+		// Need to get the latest commit since it changed
+		commit, err := ctx.Repo.GitRepo.GetBranchCommit(ctx.Repo.BranchName)
+		if err == nil && commit != nil {
+			// We have the comment, now find what directory we can return the user to
+			// (must have entries)
+			treePath = GetClosestParentWithFiles(treePath, commit)
+		} else {
+			treePath = "" // otherwise return them to the root of the repo
+		}
+	}
+
+	redirectForCommitChoice(ctx, form.CommitChoice, branchName, treePath)
+
 }
-
-// END --------------------------------------
-// END --------------------------------------
-// END --------------------------------------
-// END --------------------------------------
-
 
 // UploadFile render upload file page
 func UploadFile(ctx *context.Context) {

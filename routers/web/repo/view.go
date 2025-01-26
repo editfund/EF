@@ -967,6 +967,7 @@ func prepareOpenWithEditorApps(ctx *context.Context) {
 }
 
 func renderHomeCode(ctx *context.Context) {
+	
 	ctx.Data["PageIsViewCode"] = true
 	ctx.Data["RepositoryUploadEnabled"] = setting.Repository.Upload.Enabled
 	prepareOpenWithEditorApps(ctx)
