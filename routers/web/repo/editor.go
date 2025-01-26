@@ -628,6 +628,51 @@ func DeleteFilePost(ctx *context.Context) {
 	redirectForCommitChoice(ctx, form.CommitChoice, branchName, treePath)
 }
 
+// ---------------------------------------------------------
+// ---------------------------------------------------------
+// ---------------------------------------------------------
+// ---------------------------------------------------------
+
+
+// DeletePath render delete file page
+func DeletePath(ctx *context.Context) {
+	ctx.Data["PageIsDelete"] = true
+	ctx.Data["BranchLink"] = ctx.Repo.RepoLink + "/src/" + ctx.Repo.BranchNameSubURL()
+	treePath := cleanUploadFileName(ctx.Repo.TreePath)
+
+	if treePath != ctx.Repo.TreePath {
+		ctx.Redirect(path.Join(ctx.Repo.RepoLink, "_delete_path", util.PathEscapeSegments(ctx.Repo.BranchName), util.PathEscapeSegments(treePath)))
+		return
+	}
+
+	ctx.Data["TreePath"] = treePath
+	canCommit := renderCommitRights(ctx)
+
+	ctx.Data["commit_summary"] = ""
+	ctx.Data["commit_message"] = ""
+	ctx.Data["last_commit"] = ctx.Repo.CommitID
+	if canCommit {
+		ctx.Data["commit_choice"] = frmCommitChoiceDirect
+	} else {
+		ctx.Data["commit_choice"] = frmCommitChoiceNewBranch
+	}
+	ctx.Data["new_branch_name"] = GetUniquePatchBranchName(ctx)
+
+	ctx.HTML(http.StatusOK, tplDeleteFile)
+}
+
+// DeletePathPost response for deleting file
+func DeletePathPost(ctx *context.Context) {
+    log.Error("NOT IMPLEMENTED. YET!!")
+    return
+}
+
+// END --------------------------------------
+// END --------------------------------------
+// END --------------------------------------
+// END --------------------------------------
+
+
 // UploadFile render upload file page
 func UploadFile(ctx *context.Context) {
 	ctx.Data["PageIsUpload"] = true
