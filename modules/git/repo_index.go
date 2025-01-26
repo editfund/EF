@@ -102,6 +102,26 @@ func (repo *Repository) LsFiles(filenames ...string) ([]string, error) {
 	return filelist, err
 }
 
+// Gives a list of all files in a directory and below
+func (repo *Repository) LsFilesFromDirectory(directory string) ([]string, error) {
+        //cmd := NewCommand(repo.Ctx, "ls-files", "--directory").AddDynamicArguments(directory)
+	cmd := NewCommand(repo.Ctx, "ls-files" )
+	res, blub, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
+
+	log.Error("ssss : %+v", repo.Ctx)
+	log.Error("ssss : %+v", repo.Path)
+	log.Error("ssss : %+v", res)
+	log.Error("ssss : %+v", blub)
+
+        if err != nil {
+                return nil, err
+        }
+//        lines := strings.Split(string(res), "\n")
+//	log.Error("lllll : %+v", lines)
+//        return lines, nil
+        return nil, nil
+}
+
 // RemoveFilesFromIndex removes given filenames from the index - it does not check whether they are present.
 func (repo *Repository) RemoveFilesFromIndex(filenames ...string) error {
 	objectFormat, err := repo.GetObjectFormat()
