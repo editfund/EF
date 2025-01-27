@@ -13,6 +13,7 @@ import (
 
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/util"
+	"code.gitea.io/gitea/modules/git/internal" //nolint:depguard // only this file can use the internal type CmdArg, other files and packages should use AddXxx functions
 )
 
 // ReadTreeToIndex reads a treeish to the index
@@ -110,22 +111,22 @@ func (repo *Repository) LsFilesFromDirectory(directory string, branch string) ([
     	    return nil, errors.New("branch not found in context URL")
 	}
 
-	cmd := NewCommand(repo.Ctx, "ls-files").AddOptionValues("--with-tree=", branch).AddOptionValues("--directory", directory)
+	cmd := NewCommand(repo.Ctx, "ls-files", internal.CmdArg("--with-tree=" + branch))
+        if len(directory) > 0 {
+	    cmd = NewCommand(repo.Ctx, "ls-files", internal.CmdArg("--with-tree=" + branch), internal.CmdArg("--directory"), internal.CmdArg(directory) )
+	}
 	res, stderror, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
-
-	log.Error("ssss(0) : %+v", string(res))
-	log.Error("ssss(1) : %+v", string(stderror))
-	log.Error("ssss(2) : %+v", cmd)
-	log.Error("ssss(3) : %+v", branch)
-	log.Error("ssss(4) : %+v", directory)
-	log.Error("ssss(5) : %+v", repo.Path)
 
         if err != nil {
                 return nil, err
         }
 
+        if len(stderror) > 0 {
+                return nil, errors.New(string(stderror))
+        }
+
         lines := strings.Split(string(res), "\n")
-	log.Error("ssss(6) : %+v", lines)
+
         return lines, nil
 }
 
