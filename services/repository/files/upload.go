@@ -6,11 +6,11 @@ package files
 import (
 	"context"
 	"fmt"
+	"html"
 	"os"
 	"path"
+	"regexp"
 	"strings"
-        "regexp"
-	"html"
 
 	git_model "code.gitea.io/gitea/models/git"
 	repo_model "code.gitea.io/gitea/models/repo"
@@ -168,12 +168,12 @@ var fileNameSanitizeRegexp = regexp.MustCompile(`(?i)\.\.|[<>:\"\\|?*\x{0000}-\x
 
 // Sanitize user input to valid OS filenames
 //
-//              Based on https://github.com/sindresorhus/filename-reserved-regex
-//       Adds ".." to prevent directory traversal
+//	       Based on https://github.com/sindresorhus/filename-reserved-regex
+//	Adds ".." to prevent directory traversal
 func fileNameSanitize(s string) string {
 	// Added this because I am not sure what Windows will deliver us \ or / but we need /.
 	s = strings.ReplaceAll(s, "\\", "/")
-        return strings.TrimSpace(fileNameSanitizeRegexp.ReplaceAllString(s, "_"))
+	return strings.TrimSpace(fileNameSanitizeRegexp.ReplaceAllString(s, "_"))
 }
 
 func copyUploadedLFSFilesIntoRepository(infos []uploadInfo, t *TemporaryUploadRepository, treePath string) error {
