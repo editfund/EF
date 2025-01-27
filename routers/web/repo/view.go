@@ -1165,12 +1165,11 @@ PostRecentBranchCheck:
 	}
 
 	lfsLock, err := git_model.GetTreePathLock(ctx, ctx.Repo.Repository.ID, ctx.Repo.TreePath)
-
 	if err != nil {
 		ctx.ServerError("git_model.GetTreePathLock", err)
 		return
 	}
-	
+
 	if ctx.Repo.CanEnableEditor(ctx, ctx.Doer) {
 		if lfsLock != nil && lfsLock.OwnerID != ctx.Doer.ID {
 			ctx.Data["CanDeleteFile"] = false
