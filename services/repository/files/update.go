@@ -105,7 +105,7 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			}
 			for _, filename := range filelist {
 				if len(filename) > 0 {
-					newOptsFiles = append(new_opts_files, &ChangeRepoFile{
+					newOptsFiles = append(newOptsFiles, &ChangeRepoFile{
 						Operation: "delete",
 						TreePath:  filename,
 					})
