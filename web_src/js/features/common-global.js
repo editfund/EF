@@ -229,7 +229,7 @@ export function initDropzone(el) {
       this.on('success', (file, data) => {
         file.uuid = data.uuid;
         const $input = $(`<input id="${data.uuid}" name="files" type="hidden">`).val(data.uuid);
-        const $inputPath = $(`<input type="hidden" name="files_fullpath[${data.uuid}]" value="${file.fullPath || file.name}">`);
+        const $inputPath = $(`<input type="hidden" name="files_fullpath[${data.uuid}]" value="${htmlEscape(file.fullPath || file.name)}">`);
         $dropzone.find('.files').append($input).append($inputPath);
         // Create a "Copy Link" element, to conveniently copy the image
         // or file link as Markdown to the clipboard
