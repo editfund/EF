@@ -51,12 +51,12 @@ import (
 
 	_ "code.gitea.io/gitea/modules/session" // to registers all internal adapters
 
+	"code.forgejo.org/go-chi/binding"
 	"code.forgejo.org/go-chi/captcha"
 	chi_middleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/klauspost/compress/gzhttp"
 	"github.com/prometheus/client_golang/prometheus"
-        "code.forgejo.org/go-chi/binding"
 )
 
 var GzipMinSize = gzhttp.DefaultMinSize
@@ -1674,19 +1674,18 @@ func registerRoutes(m *web.Route) {
 }
 
 func BindUpload(f forms.UploadRepoFileForm) http.HandlerFunc {
-        return func(resp http.ResponseWriter, req *http.Request) {
-
-                theObj := new(forms.UploadRepoFileForm) // create a new form obj for every request but not use obj directly
-                data := middleware.GetContextData(req.Context())
-                binding.Bind(req, theObj)
-                files := theObj.Files
-                var fullpaths []string
-                for _, fileID := range files {
-                    fullPath := req.Form.Get("files_fullpath[" + fileID + "]")
-                    fullpaths = append(fullpaths, fullPath)
-                }
-                theObj.FullPaths = fullpaths
-                data.GetData()["__form"] = theObj
-                middleware.AssignForm(theObj, data)
-        }
+	return func(resp http.ResponseWriter, req *http.Request) {
+		theObj := new(forms.UploadRepoFileForm) // create a new form obj for every request but not use obj directly
+		data := middleware.GetContextData(req.Context())
+		binding.Bind(req, theObj)
+		files := theObj.Files
+		var fullpaths []string
+		for _, fileID := range files {
+			fullPath := req.Form.Get("files_fullpath[" + fileID + "]")
+			fullpaths = append(fullpaths, fullPath)
+		}
+		theObj.FullPaths = fullpaths
+		data.GetData()["__form"] = theObj
+		middleware.AssignForm(theObj, data)
+	}
 }
