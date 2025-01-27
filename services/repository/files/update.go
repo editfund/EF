@@ -93,7 +93,7 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	if opts.IsDir {
-		var new_opts_files []*ChangeRepoFile
+		var newOptsFiles []*ChangeRepoFile
 		for _, file := range opts.Files {
 			if file.Operation != "delete" {
 				return nil, errors.New("invalid operation: only delete is allowed for directory paths")
@@ -105,14 +105,14 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			}
 			for _, filename := range filelist {
 				if len(filename) > 0 {
-					new_opts_files = append(new_opts_files, &ChangeRepoFile{
+					newOptsFiles = append(new_opts_files, &ChangeRepoFile{
 						Operation: "delete",
 						TreePath:  filename,
 					})
 				}
 			}
 		}
-		opts.Files = new_opts_files
+		opts.Files = newOptsFiles
 	}
 
 	var treePaths []string
