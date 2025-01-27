@@ -98,7 +98,7 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 				return nil, errors.New("invalid operation: only delete is allowed for directory paths")
 			}
 			treePath := CleanUploadFileName(file.TreePath)
-			filelist, err := gitRepo.LsFilesFromDirectory(treePath)
+			filelist, err := gitRepo.LsFilesFromDirectory(treePath, opts.OldBranch)
 			if err != nil {
 			    return nil, err
 			}
