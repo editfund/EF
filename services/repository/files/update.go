@@ -5,12 +5,12 @@ package files
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path"
 	"strings"
 	"time"
-	"errors"
 
 	"code.gitea.io/gitea/models"
 	git_model "code.gitea.io/gitea/models/git"
@@ -101,14 +101,13 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			treePath := CleanUploadFileName(file.TreePath)
 			filelist, err := gitRepo.LsFilesFromDirectory(treePath, opts.OldBranch)
 			if err != nil {
-			    return nil, err
+				return nil, err
 			}
 			for _, filename := range filelist {
-				if len(filename) > 0{
-
+				if len(filename) > 0 {
 					new_opts_files = append(new_opts_files, &ChangeRepoFile{
-        				    Operation: "delete",
-        				    TreePath:  filename,
+						Operation: "delete",
+						TreePath:  filename,
 					})
 				}
 			}
