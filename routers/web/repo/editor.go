@@ -491,17 +491,17 @@ func DeleteFile(ctx *context.Context) {
 
 // DeletePath render delete file page
 func DeletePath(ctx *context.Context) {
-    DeleteFile(ctx)
+	DeleteFile(ctx)
 }
 
 // DeleteFilePost response for deleting file
 func DeleteFilePost(ctx *context.Context) {
-    DeletePathOrFilePost(ctx, false)
+	DeletePathOrFilePost(ctx, false)
 }
 
 // DeletePathPost response for deleting path
 func DeletePathPost(ctx *context.Context) {
-    DeletePathOrFilePost(ctx, true)
+	DeletePathOrFilePost(ctx, true)
 }
 
 // DeletePathOrFilePost response for deleting path or file
