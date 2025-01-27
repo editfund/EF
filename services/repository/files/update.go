@@ -93,6 +93,7 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	if opts.IsDir {
+		var new_opts_files []*ChangeRepoFile
 		for _, file := range opts.Files {
 			if file.Operation != "delete" {
 				return nil, errors.New("invalid operation: only delete is allowed for directory paths")
@@ -102,14 +103,17 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			if err != nil {
 			    return nil, err
 			}
-			log.Error("yyyyyy(0): %+v", gitRepo)
-			log.Error("yyyyyy(0): %+v", treePath)
-			log.Error("yyyyyy(1): %+v", filelist)
-			log.Error("yyyyyy(2): %+v", file)
-			log.Error("yyyyyy(3): %T", file)
-			// &{Operation:delete TreePath:blabla FromTreePath: ContentReader:<nil> SHA: Options:<nil>}
+			for _, filename := range filelist {
+				if len(filename) > 0{
+
+					new_opts_files = append(new_opts_files, &ChangeRepoFile{
+        				    Operation: "delete",
+        				    TreePath:  filename,
+					})
+				}
+			}
 		}
-		return nil, errors.New("Test")
+		opts.Files = new_opts_files
 	}
 
 	var treePaths []string
