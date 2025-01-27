@@ -115,13 +115,13 @@
 					</span>
 				{{end}}
 
-                    		{{if (not .IsViewFile)}}
-                    			{{if and .CanDeleteFile (not .IsBlame)}}
-	                            		<a href="{{.RepoLink}}/_delete_path/{{PathEscapeSegments .BranchName}}/{{PathEscapeSegments .TreePath}}"><span class="btn-octicon btn-octicon-danger"  data-tooltip-content="{{.DeleteFileTooltip}}">{{svg "octicon-trash"}}</span></a>
-    	                                {{else}}
-        	                        	<span class="btn-octicon disabled" data-tooltip-content="{{.DeleteFileTooltip}}">{{svg "octicon-trash"}}</span>
-            	                        {{end}}
-                                {{end}}
+				{{if (not .IsViewFile)}}
+					{{if and .CanDeleteFile (not .IsBlame)}}
+						<span class="btn-octicon btn-octicon-danger" data-tooltip-content="{{.DeleteFileTooltip}}"> <a href="{{.RepoLink}}/_delete_path/{{PathEscapeSegments .BranchName}}/{{PathEscapeSegments .TreePath}}"><span class="btn-octicon btn-octicon-danger"  data-tooltip-content="{{.DeleteFileTooltip}}">{{svg "octicon-trash"}}</span></a>
+					{{else}}
+						<span class="btn-octicon disabled" data-tooltip-content="{{.DeleteFileTooltip}}">{{svg "octicon-trash"}}</span>
+					{{end}}
+				{{end}}
 			</div>
 			<div class="tw-flex tw-items-center">
 				<!-- Only show clone panel in repository home page -->
