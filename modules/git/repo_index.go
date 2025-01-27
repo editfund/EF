@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"errors"
 
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/util"
@@ -103,23 +104,29 @@ func (repo *Repository) LsFiles(filenames ...string) ([]string, error) {
 }
 
 // Gives a list of all files in a directory and below
-func (repo *Repository) LsFilesFromDirectory(directory string) ([]string, error) {
-        //cmd := NewCommand(repo.Ctx, "ls-files", "--directory").AddDynamicArguments(directory)
-	cmd := NewCommand(repo.Ctx, "ls-files" )
-	res, blub, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
+func (repo *Repository) LsFilesFromDirectory(directory string, branch string) ([]string, error) {
 
-	log.Error("ssss : %+v", repo.Ctx)
-	log.Error("ssss : %+v", repo.Path)
-	log.Error("ssss : %+v", res)
-	log.Error("ssss : %+v", blub)
+	if branch == "" {
+    	    return nil, errors.New("branch not found in context URL")
+	}
+
+	cmd := NewCommand(repo.Ctx, "ls-files").AddOptionValues("--with-tree=", branch).AddOptionValues("--directory", directory)
+	res, stderror, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
+
+	log.Error("ssss(0) : %+v", string(res))
+	log.Error("ssss(1) : %+v", string(stderror))
+	log.Error("ssss(2) : %+v", cmd)
+	log.Error("ssss(3) : %+v", branch)
+	log.Error("ssss(4) : %+v", directory)
+	log.Error("ssss(5) : %+v", repo.Path)
 
         if err != nil {
                 return nil, err
         }
-//        lines := strings.Split(string(res), "\n")
-//	log.Error("lllll : %+v", lines)
-//        return lines, nil
-        return nil, nil
+
+        lines := strings.Split(string(res), "\n")
+	log.Error("ssss(6) : %+v", lines)
+        return lines, nil
 }
 
 // RemoveFilesFromIndex removes given filenames from the index - it does not check whether they are present.
