@@ -118,7 +118,7 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			
 			for _, entry := range allEntries {
 				filename := entry.Name()
-				
+				// Here we need to remove directories... I don't know why...
 				if len(filename) > 0 {
 					newOptsFiles = append(newOptsFiles, &ChangeRepoFile{
 						Operation: "delete",
