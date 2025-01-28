@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.gitea.io/gitea/modules/git/internal" //nolint:depguard // only this file can use the internal type CmdArg, other files and packages should use AddXxx functions
 	"code.gitea.io/gitea/modules/log"
 	"code.gitea.io/gitea/modules/util"
 )
@@ -102,30 +101,6 @@ func (repo *Repository) LsFiles(filenames ...string) ([]string, error) {
 	}
 
 	return filelist, err
-}
-
-// Gives a list of all files in a directory and below
-func (repo *Repository) LsFilesFromDirectory(directory, branch string) ([]string, error) {
-	if branch == "" {
-		return nil, errors.New("branch not found in context URL")
-	}
-
-	cmd := NewCommand(repo.Ctx, "ls-files", internal.CmdArg("--with-tree="+branch))
-	if len(directory) > 0 {
-		cmd = NewCommand(repo.Ctx, "ls-files", internal.CmdArg("--with-tree="+branch), internal.CmdArg("--directory"), internal.CmdArg(directory))
-	}
-	res, stderror, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(stderror) > 0 {
-		return nil, errors.New(string(stderror))
-	}
-
-	lines := strings.Split(string(res), "\n")
-
-	return lines, nil
 }
 
 // RemoveFilesFromIndex removes given filenames from the index - it does not check whether they are present.
