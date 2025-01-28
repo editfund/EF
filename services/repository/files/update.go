@@ -88,8 +88,8 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	defer closer.Close()
 
 	// oldBranch must exist for this operation
-	if _, err := gitRepo.GetBranch(opts.OldBranch); 
-	err != nil && !repo.IsEmpty {
+	branch, err := gitRepo.GetBranch(opts.OldBranch);
+	if err != nil && !repo.IsEmpty {
 		return nil, err
 	}
 
@@ -100,11 +100,25 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 				return nil, errors.New("invalid operation: only delete is allowed for directory paths")
 			}
 			treePath := CleanUploadFileName(file.TreePath)
-			filelist, err := gitRepo.LsFilesFromDirectory(treePath, opts.OldBranch)
+			
+			branchCommit, err := branch.GetCommit()
 			if err != nil {
 				return nil, err
 			}
-			for _, filename := range filelist {
+			
+			tree, err := branchCommit.SubTree(treePath)
+			if err != nil {
+				return nil, err
+			}
+			
+			allEntries, err := tree.ListEntriesRecursiveFast()
+			if err != nil {
+				return nil, err
+			}
+			
+			for _, entry := range allEntries {
+				filename := entry.Name()
+				
 				if len(filename) > 0 {
 					newOptsFiles = append(newOptsFiles, &ChangeRepoFile{
 						Operation: "delete",
