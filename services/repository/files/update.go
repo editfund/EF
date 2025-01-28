@@ -88,7 +88,8 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	defer closer.Close()
 
 	// oldBranch must exist for this operation
-	if _, err := gitRepo.GetBranch(opts.OldBranch); err != nil && !repo.IsEmpty {
+	if _, err := gitRepo.GetBranch(opts.OldBranch); 
+	err != nil && !repo.IsEmpty {
 		return nil, err
 	}
 
