@@ -6,6 +6,7 @@ package git
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,6 +101,30 @@ func (repo *Repository) LsFiles(filenames ...string) ([]string, error) {
 	}
 
 	return filelist, err
+}
+
+// Gives a list of all files in a directory and below
+func (repo *Repository) LsFilesFromDirectory(directory, branch string) ([]string, error) {
+	if branch == "" {
+		return nil, errors.New("branch not found in context URL")
+	}
+
+	cmd := NewCommand(repo.Ctx, "ls-files").AddDynamicArguments("--with-tree="+branch)
+	if len(directory) > 0 {
+		cmd = NewCommand(repo.Ctx, "ls-files").AddDynamicArguments("--with-tree="+branch).AddDynamicArguments("--directory").AddDynamicArguments(directory)
+	}
+	res, stderror, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(stderror) > 0 {
+		return nil, errors.New(string(stderror))
+	}
+
+	lines := strings.Split(string(res), "\n")
+
+	return lines, nil
 }
 
 // RemoveFilesFromIndex removes given filenames from the index - it does not check whether they are present.
