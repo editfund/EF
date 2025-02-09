@@ -20,12 +20,13 @@ test('drap and drop upload test', async ({ page }, workerInfo) => {
   await page.fill('input[name=retype]', 'test123test123');
   await page.click('form button.ui.primary.button:visible');
 
-  // Log-in into account
-  const response2 = await page.goto('/user/login');
-  expect(response2?.status()).toBe(200); // Status OK
-  await page.fill('input[name=user_name]', `e2e-test-${workerInfo.workerIndex}`);
-  await page.fill('input[name=password]', 'test123test123');
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  // It looks like that I am automatically logged in if I create the account
+  // // Log-in into account
+  // const response2 = await page.goto('/user/login');
+  // expect(response2?.status()).toBe(200); // Status OK
+  // await page.fill('input[name=user_name]', `e2e-test-${workerInfo.workerIndex}`);
+  // await page.fill('input[name=password]', 'test123test123');
+  // await page.getByRole('button', { name: 'Sign in' }).click();
 
   // Create a new repos
   const response3 = await page.goto('/repo/create');
