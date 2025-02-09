@@ -5,12 +5,12 @@ package files
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"path"
 	"strings"
 	"time"
+	"errors"
 
 	"code.gitea.io/gitea/models"
 	git_model "code.gitea.io/gitea/models/git"
@@ -88,46 +88,32 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	defer closer.Close()
 
 	// oldBranch must exist for this operation
-	branch, err := gitRepo.GetBranch(opts.OldBranch);
-	if err != nil && !repo.IsEmpty {
+	if _, err := gitRepo.GetBranch(opts.OldBranch); err != nil && !repo.IsEmpty {
 		return nil, err
 	}
 
 	if opts.IsDir {
-		var newOptsFiles []*ChangeRepoFile
+		var new_opts_files []*ChangeRepoFile
 		for _, file := range opts.Files {
 			if file.Operation != "delete" {
 				return nil, errors.New("invalid operation: only delete is allowed for directory paths")
 			}
 			treePath := CleanUploadFileName(file.TreePath)
-			
-			branchCommit, err := branch.GetCommit()
+			filelist, err := gitRepo.LsFilesFromDirectory(treePath, opts.OldBranch)
 			if err != nil {
-				return nil, err
+			    return nil, err
 			}
-			
-			tree, err := branchCommit.SubTree(treePath)
-			if err != nil {
-				return nil, err
-			}
-			
-			allEntries, err := tree.ListEntriesRecursiveFast()
-			if err != nil {
-				return nil, err
-			}
-			
-			for _, entry := range allEntries {
-				filename := entry.Name()
-				// Here we need to remove directories... I don't know how...
-				if len(filename) > 0 {
-					newOptsFiles = append(newOptsFiles, &ChangeRepoFile{
-						Operation: "delete",
-						TreePath:  filename,
+			for _, filename := range filelist {
+				if len(filename) > 0{
+
+					new_opts_files = append(new_opts_files, &ChangeRepoFile{
+        				    Operation: "delete",
+        				    TreePath:  filename,
 					})
 				}
 			}
 		}
-		opts.Files = newOptsFiles
+		opts.Files = new_opts_files
 	}
 
 	var treePaths []string
