@@ -25,17 +25,17 @@ test('delete directory test', async ({ page }, workerInfo) => {
   }).toPass();
 
   // Remove later because after creating a new account it is logged in
-  // Log-in into account
-  await expect(async () => {
-    const response = await page.goto('/user/login');
-    expect(response?.status()).toBe(200);
-  }).toPass();
+  // // Log-in into account
+  // await expect(async () => {
+  //   const response = await page.goto('/user/login');
+  //   expect(response?.status()).toBe(200);
+  // }).toPass();
 
-  //  await expect(async () => {
-  await page.fill('input[name=user_name]', `e2e-test-${workerInfo.workerIndex}`);
-  await page.fill('input[name=password]', 'test123test123');
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  //  }).toPass();
+  // await expect(async () => {
+  //   await page.fill('input[name=user_name]', `e2e-test-${workerInfo.workerIndex}`);
+  //   await page.fill('input[name=password]', 'test123test123');
+  //   await page.getByRole('button', { name: 'Sign in' }).click();
+  // }).toPass();
 
   // Create a new repos
   await expect(async () => {
@@ -158,16 +158,16 @@ test('delete directory test', async ({ page }, workerInfo) => {
     await page.click('form button.ui.primary.button:visible');
   }).toPass();
   // Remove later because after creating a new account it is logged in
-  // Log-in into account
-  await expect(async () => {
-    const response = await page.goto('/user/login');
-    expect(response?.status()).toBe(200);
-  }).toPass();
-  await expect(async () => {
-    await page.fill('input[name=user_name]', `oe2e-test-${workerInfo.workerIndex}`);
-    await page.fill('input[name=password]', 'test123test123');
-    await page.getByRole('button', { name: 'Sign in' }).click();
-  }).toPass();
+  // // Log-in into account
+  // await expect(async () => {
+  //   const response = await page.goto('/user/login');
+  //   expect(response?.status()).toBe(200);
+  // }).toPass();
+  // await expect(async () => {
+  //   await page.fill('input[name=user_name]', `oe2e-test-${workerInfo.workerIndex}`);
+  //   await page.fill('input[name=password]', 'test123test123');
+  //   await page.getByRole('button', { name: 'Sign in' }).click();
+  // }).toPass();
 
   // Delete shouldn't be able for a different person
   await expect(async () => {
