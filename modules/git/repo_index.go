@@ -109,9 +109,9 @@ func (repo *Repository) LsFilesFromDirectory(directory string, branch string) ([
 		return nil, errors.New("branch not found in context URL")
 	}
 
-	cmd := NewCommand(repo.Ctx, "ls-files").AddDynamicArguments("--with-tree="+branch)
+	cmd := NewCommand(repo.Ctx, "ls-files").AddOptionFormat("--with-tree=%s", branch)
 	if len(directory) > 0 {
-		cmd = NewCommand(repo.Ctx, "ls-files").AddDynamicArguments("--with-tree="+branch).AddDynamicArguments("--directory").AddDynamicArguments(directory)
+		cmd.AddArguments("--directory").AddDashesAndList(directory)
 	}
 	res, stderror, err := cmd.RunStdBytes(&RunOpts{Dir: repo.Path})
 	if err != nil {
