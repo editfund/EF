@@ -26,7 +26,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.15.0
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb
 	github.com/blevesearch/bleve/v2 v2.4.4
-	github.com/buildkite/terminal-to-html/v3 v3.16.4
+	github.com/buildkite/terminal-to-html/v3 v3.16.5
 	github.com/caddyserver/certmagic v0.21.7
 	github.com/chi-middleware/proxy v1.1.1
 	github.com/djherbis/buffer v1.2.0
@@ -76,7 +76,7 @@ require (
 	github.com/meilisearch/meilisearch-go v0.29.0
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/microcosm-cc/bluemonday v1.0.27
-	github.com/minio/minio-go/v7 v7.0.84
+	github.com/minio/minio-go/v7 v7.0.85
 	github.com/msteinert/pam v1.2.0
 	github.com/nektos/act v0.2.52
 	github.com/niklasfasching/go-org v1.7.0
@@ -103,7 +103,7 @@ require (
 	go.uber.org/mock v0.4.0
 	golang.org/x/crypto v0.33.0
 	golang.org/x/image v0.23.0
-	golang.org/x/net v0.34.0
+	golang.org/x/net v0.35.0
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/sync v0.11.0
 	golang.org/x/sys v0.30.0
