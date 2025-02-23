@@ -10,7 +10,7 @@
 import { expect } from '@playwright/test';
 import { test, dynamic_id, save_visual } from './utils_e2e.ts';
 
-test.use({user: 'user2'});
+test.use({ user: 'user2' });
 
 test('drap and drop upload', async ({ page }, workerInfo) => {
   const response = await page.goto(`/user2/file-uploads/_upload/main/`);
@@ -24,9 +24,9 @@ test('drap and drop upload', async ({ page }, workerInfo) => {
     const dt = new DataTransfer();
 
     // add items in different folders
-    dt.items.add(new File(["Filecontent"], 'dir1/file1.txt', { type: 'text/plain' }));
-    dt.items.add(new File(["Another file's content"], 'double/nested/file.txt', { type: 'text/plain' }));
-    dt.items.add(new File(["Root file"], 'root_file.txt', { type: 'text/plain' }));
+    dt.items.add(new File(["Filecontent (dir1/file1.txt)"], 'dir1/file1.txt', { type: 'text/plain' }));
+    dt.items.add(new File(["Another file's content (double/nested/file.txt)"], 'double/nested/file.txt', { type: 'text/plain' }));
+    dt.items.add(new File(["Root file (root_file.txt)"], 'root_file.txt', { type: 'text/plain' }));
 
     return dt;
   });
