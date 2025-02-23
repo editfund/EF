@@ -63,17 +63,20 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 		return nil
 	}
 
-	uploads, err := repo_model.GetUploadsByUUIDs(ctx, opts.Files)
-	if err != nil {
-		return fmt.Errorf("GetUploadsByUUIDs [uuids: %v]: %w", opts.Files, err)
-	}
+	uploads := make([]*repo_model.Upload, len(opts.Files))
+	names := make([]string, len(opts.Files))
+	infos := make([]uploadInfo, len(opts.Files))
 
-	names := make([]string, len(uploads))
-	infos := make([]uploadInfo, len(uploads))
-	for i, upload := range uploads {
+	for i := 0; i < len(opts.Files); i++ {
+		var err error
+		uploads[i], err = repo_model.GetUploadByUUID(ctx, opts.Files[i])
+		if err != nil {
+			return fmt.Errorf("GetUploadByUUID [uuids: %v]: %w", opts.Files[i], err)
+		}
+		uploads[i].Name = fileNameSanitize(html.UnescapeString(opts.FullPaths[i]))
+
 		// Check file is not lfs locked, will return nil if lock setting not enabled
-		upload.Name = fileNameSanitize(html.UnescapeString(opts.FullPaths[i]))
-		filepath := path.Join(opts.TreePath, upload.Name)
+		filepath := path.Join(opts.TreePath, uploads[i].Name)
 		lfsLock, err := git_model.GetTreePathLock(ctx, repo.ID, filepath)
 		if err != nil {
 			return err
@@ -86,8 +89,8 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			return git_model.ErrLFSFileLocked{RepoID: repo.ID, Path: filepath, UserName: u.Name}
 		}
 
-		names[i] = upload.Name
-		infos[i] = uploadInfo{upload: upload}
+		names[i] = uploads[i].Name
+		infos[i] = uploadInfo{upload: uploads[i]}
 	}
 
 	t, err := NewTemporaryUploadRepository(ctx, repo)
