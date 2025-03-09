@@ -66,9 +66,9 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	uploads := make([]*repo_model.Upload, len(opts.Files))
 	names := make([]string, len(opts.Files))
 	infos := make([]uploadInfo, len(opts.Files))
-
+	
+	var err error
 	for i := 0; i < len(opts.Files); i++ {
-		var err error
 		uploads[i], err = repo_model.GetUploadByUUID(ctx, opts.Files[i])
 		if err != nil {
 			return fmt.Errorf("GetUploadByUUID [uuids: %v]: %w", opts.Files[i], err)
