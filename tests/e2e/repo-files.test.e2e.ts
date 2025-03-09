@@ -5,8 +5,6 @@
 // services/repository/files/upload.go
 // @watch end
 
-/// <reference lib="dom"/>
-
 import {expect} from '@playwright/test';
 import {test, dynamic_id, save_visual} from './utils_e2e.ts';
 
