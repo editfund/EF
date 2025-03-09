@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -42,8 +41,7 @@ const (
 	tplSettingsRepositories base.TplName = "user/settings/repos"
 )
 
-// must be kept in sync with `web_src/js/features/user-settings.js`
-var recognisedPronouns = []string{"", "he/him", "she/her", "they/them", "it/its", "any pronouns"}
+var commonPronouns = []string{"he/him", "she/her", "they/them", "it/its", "any pronouns"}
 
 // Profile render user's profile page
 func Profile(ctx *context.Context) {
@@ -51,8 +49,8 @@ func Profile(ctx *context.Context) {
 	ctx.Data["PageIsSettingsProfile"] = true
 	ctx.Data["AllowedUserVisibilityModes"] = setting.Service.AllowedUserVisibilityModesSlice.ToVisibleTypeSlice()
 	ctx.Data["DisableGravatar"] = setting.Config().Picture.DisableGravatar.Value(ctx)
-	ctx.Data["PronounsAreCustom"] = !slices.Contains(recognisedPronouns, ctx.Doer.Pronouns)
 	ctx.Data["CooldownPeriod"] = setting.Service.UsernameCooldownPeriod
+	ctx.Data["CommonPronouns"] = commonPronouns
 
 	ctx.HTML(http.StatusOK, tplSettingsProfile)
 }
@@ -63,8 +61,8 @@ func ProfilePost(ctx *context.Context) {
 	ctx.Data["PageIsSettingsProfile"] = true
 	ctx.Data["AllowedUserVisibilityModes"] = setting.Service.AllowedUserVisibilityModesSlice.ToVisibleTypeSlice()
 	ctx.Data["DisableGravatar"] = setting.Config().Picture.DisableGravatar.Value(ctx)
-	ctx.Data["PronounsAreCustom"] = !slices.Contains(recognisedPronouns, ctx.Doer.Pronouns)
 	ctx.Data["CooldownPeriod"] = setting.Service.UsernameCooldownPeriod
+	ctx.Data["CommonPronouns"] = commonPronouns
 
 	if ctx.HasError() {
 		ctx.HTML(http.StatusOK, tplSettingsProfile)
@@ -331,6 +329,14 @@ func Repos(ctx *context.Context) {
 func Appearance(ctx *context.Context) {
 	ctx.Data["Title"] = ctx.Tr("settings.appearance")
 	ctx.Data["PageIsSettingsAppearance"] = true
+	ctx.Data["AllThemes"] = setting.UI.Themes
+	ctx.Data["ThemeName"] = func(themeName string) string {
+		fullThemeName := "themes.names." + themeName
+		if ctx.Locale.HasKey(fullThemeName) {
+			return ctx.Locale.TrString(fullThemeName)
+		}
+		return themeName
+	}
 
 	var hiddenCommentTypes *big.Int
 	val, err := user_model.GetUserSetting(ctx, ctx.Doer.ID, user_model.SettingsKeyHiddenCommentTypes)

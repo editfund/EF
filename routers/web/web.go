@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	auth_model "code.gitea.io/gitea/models/auth"
-	"code.gitea.io/gitea/models/db"
 	"code.gitea.io/gitea/models/perm"
 	quota_model "code.gitea.io/gitea/models/quota"
 	"code.gitea.io/gitea/models/unit"
@@ -110,10 +108,6 @@ func buildAuthGroup() *auth_service.Group {
 		group.Add(&auth_service.ReverseProxy{}) // reverseproxy should before Session, otherwise the header will be ignored if user has login
 	}
 	group.Add(&auth_service.Session{})
-
-	if setting.IsWindows && auth_model.IsSSPIEnabled(db.DefaultContext) {
-		group.Add(&auth_service.SSPI{}) // it MUST be the last, see the comment of SSPI
-	}
 
 	return group
 }
@@ -593,6 +587,7 @@ func registerRoutes(m *web.Route) {
 			m.Combo("").Get(user_setting.Applications).
 				Post(web.Bind(forms.NewAccessTokenForm{}), user_setting.ApplicationsPost)
 			m.Post("/delete", user_setting.DeleteApplication)
+			m.Post("/regenerate", user_setting.RegenerateApplication)
 		})
 
 		m.Combo("/keys").Get(user_setting.Keys).
@@ -645,7 +640,8 @@ func registerRoutes(m *web.Route) {
 			m.Get("", user_setting.BlockedUsers)
 			m.Post("/unblock", user_setting.UnblockUser)
 		})
-	}, reqSignIn, ctxDataSet("PageIsUserSettings", true, "AllThemes", setting.UI.Themes, "EnablePackages", setting.Packages.Enabled))
+		m.Get("/storage_overview", user_setting.StorageOverview)
+	}, reqSignIn, ctxDataSet("PageIsUserSettings", true, "EnablePackages", setting.Packages.Enabled, "EnableQuota", setting.Quota.Enabled))
 
 	m.Group("/user", func() {
 		m.Get("/activate", auth.Activate)
@@ -931,6 +927,7 @@ func registerRoutes(m *web.Route) {
 					m.Post("/block", org_setting.BlockedUsersBlock)
 					m.Post("/unblock", org_setting.BlockedUsersUnblock)
 				})
+				m.Get("/storage_overview", org_setting.StorageOverview)
 
 				m.Group("/packages", func() {
 					m.Get("", org.Packages)
@@ -950,7 +947,7 @@ func registerRoutes(m *web.Route) {
 						m.Post("/rebuild", org.RebuildCargoIndex)
 					})
 				}, packagesEnabled)
-			}, ctxDataSet("EnableOAuth2", setting.OAuth2.Enabled, "EnablePackages", setting.Packages.Enabled, "PageIsOrgSettings", true))
+			}, ctxDataSet("EnableOAuth2", setting.OAuth2.Enabled, "EnablePackages", setting.Packages.Enabled, "EnableQuota", setting.Quota.Enabled, "PageIsOrgSettings", true))
 		}, context.OrgAssignment(true, true))
 	}, reqSignIn)
 	// ***** END: Organization *****

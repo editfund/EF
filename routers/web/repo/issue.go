@@ -1260,7 +1260,11 @@ func NewIssuePost(ctx *context.Context) {
 
 	if err := issue_service.NewIssue(ctx, repo, issue, labelIDs, attachments, assigneeIDs); err != nil {
 		if errors.Is(err, user_model.ErrBlockedByUser) {
-			ctx.JSONError(ctx.Tr("repo.issues.blocked_by_user"))
+			if issue.IsPull {
+				ctx.JSONError(ctx.Tr("repo.pulls.blocked_by_user"))
+			} else {
+				ctx.JSONError(ctx.Tr("repo.issues.blocked_by_user"))
+			}
 			return
 		} else if repo_model.IsErrUserDoesNotHaveAccessToRepo(err) {
 			ctx.Error(http.StatusBadRequest, "UserDoesNotHaveAccessToRepo", err.Error())
@@ -1830,8 +1834,7 @@ func ViewIssue(ctx *context.Context) {
 	ctx.Data["LatestCloseCommentID"] = latestCloseCommentID
 
 	// Combine multiple label assignments into a single comment
-	combineLabelComments(issue)
-	combineRequestReviewComments(issue)
+	issues_model.CombineCommentsHistory(issue, time.Now().Unix())
 
 	getBranchData(ctx, issue)
 	if issue.IsPull {
@@ -2081,6 +2084,7 @@ func ViewIssue(ctx *context.Context) {
 	ctx.Data["OpenGraphDescription"] = issue.Content
 	ctx.Data["OpenGraphImageURL"] = issue.SummaryCardURL()
 	ctx.Data["OpenGraphImageAltText"] = ctx.Tr("repo.issues.summary_card_alt", issue.Title, issue.Repo.FullName())
+	ctx.Data["IsBlocked"] = ctx.Doer != nil && user_model.IsBlockedMultiple(ctx, []int64{issue.PosterID, issue.Repo.OwnerID}, ctx.Doer.ID)
 
 	prepareHiddenCommentType(ctx)
 	if ctx.Written() {
@@ -3199,6 +3203,15 @@ func NewComment(ctx *context.Context) {
 			} else {
 				isClosed := form.Status == "close"
 				if err := issue_service.ChangeStatus(ctx, issue, ctx.Doer, "", isClosed); err != nil {
+					if errors.Is(err, user_model.ErrBlockedByUser) {
+						if issue.IsPull {
+							ctx.JSONError(ctx.Tr("repo.pulls.blocked_by_user"))
+						} else {
+							ctx.JSONError(ctx.Tr("repo.issues.blocked_by_user"))
+						}
+						return
+					}
+
 					log.Error("ChangeStatus: %v", err)
 
 					if issues_model.IsErrDependenciesLeft(err) {
@@ -3240,7 +3253,11 @@ func NewComment(ctx *context.Context) {
 	comment, err := issue_service.CreateIssueComment(ctx, ctx.Doer, ctx.Repo.Repository, issue, form.Content, attachments)
 	if err != nil {
 		if errors.Is(err, user_model.ErrBlockedByUser) {
-			ctx.JSONError(ctx.Tr("repo.issues.comment.blocked_by_user"))
+			if issue.IsPull {
+				ctx.JSONError(ctx.Tr("repo.pulls.comment.blocked_by_user"))
+			} else {
+				ctx.JSONError(ctx.Tr("repo.issues.comment.blocked_by_user"))
+			}
 		} else {
 			ctx.ServerError("CreateIssueComment", err)
 		}
@@ -3690,194 +3707,6 @@ func attachmentsHTML(ctx *context.Context, attachments []*repo_model.Attachment,
 		return ""
 	}
 	return attachHTML
-}
-
-type RequestReviewTarget struct {
-	user *user_model.User
-	team *organization.Team
-}
-
-func (t *RequestReviewTarget) ID() int64 {
-	if t.user != nil {
-		return t.user.ID
-	}
-	return t.team.ID
-}
-
-func (t *RequestReviewTarget) Name() string {
-	if t.user != nil {
-		return t.user.GetDisplayName()
-	}
-	return t.team.Name
-}
-
-func (t *RequestReviewTarget) Type() string {
-	if t.user != nil {
-		return "user"
-	}
-	return "team"
-}
-
-// combineRequestReviewComments combine the nearby request review comments as one.
-func combineRequestReviewComments(issue *issues_model.Issue) {
-	var prev, cur *issues_model.Comment
-	for i := 0; i < len(issue.Comments); i++ {
-		cur = issue.Comments[i]
-		if i > 0 {
-			prev = issue.Comments[i-1]
-		}
-		if i == 0 || cur.Type != issues_model.CommentTypeReviewRequest ||
-			(prev != nil && prev.PosterID != cur.PosterID) ||
-			(prev != nil && cur.CreatedUnix-prev.CreatedUnix >= 60) {
-			if cur.Type == issues_model.CommentTypeReviewRequest && (cur.Assignee != nil || cur.AssigneeTeam != nil) {
-				if cur.RemovedAssignee {
-					if cur.AssigneeTeam != nil {
-						cur.RemovedRequestReview = append(cur.RemovedRequestReview, &RequestReviewTarget{team: cur.AssigneeTeam})
-					} else {
-						cur.RemovedRequestReview = append(cur.RemovedRequestReview, &RequestReviewTarget{user: cur.Assignee})
-					}
-				} else {
-					if cur.AssigneeTeam != nil {
-						cur.AddedRequestReview = append(cur.AddedRequestReview, &RequestReviewTarget{team: cur.AssigneeTeam})
-					} else {
-						cur.AddedRequestReview = append(cur.AddedRequestReview, &RequestReviewTarget{user: cur.Assignee})
-					}
-				}
-			}
-			continue
-		}
-
-		// Previous comment is not a review request, so cannot group. Start a new group.
-		if prev.Type != issues_model.CommentTypeReviewRequest {
-			if cur.RemovedAssignee {
-				if cur.AssigneeTeam != nil {
-					cur.RemovedRequestReview = append(cur.RemovedRequestReview, &RequestReviewTarget{team: cur.AssigneeTeam})
-				} else {
-					cur.RemovedRequestReview = append(cur.RemovedRequestReview, &RequestReviewTarget{user: cur.Assignee})
-				}
-			} else {
-				if cur.AssigneeTeam != nil {
-					cur.AddedRequestReview = append(cur.AddedRequestReview, &RequestReviewTarget{team: cur.AssigneeTeam})
-				} else {
-					cur.AddedRequestReview = append(cur.AddedRequestReview, &RequestReviewTarget{user: cur.Assignee})
-				}
-			}
-			continue
-		}
-
-		// Start grouping.
-		if cur.RemovedAssignee {
-			addedIndex := slices.IndexFunc(prev.AddedRequestReview, func(t issues_model.RequestReviewTarget) bool {
-				if cur.AssigneeTeam != nil {
-					return cur.AssigneeTeam.ID == t.ID() && t.Type() == "team"
-				}
-				return cur.Assignee.ID == t.ID() && t.Type() == "user"
-			})
-
-			// If for this target a AddedRequestReview, then we remove that entry. If it's not found, then add it to the RemovedRequestReview.
-			if addedIndex == -1 {
-				if cur.AssigneeTeam != nil {
-					prev.RemovedRequestReview = append(prev.RemovedRequestReview, &RequestReviewTarget{team: cur.AssigneeTeam})
-				} else {
-					prev.RemovedRequestReview = append(prev.RemovedRequestReview, &RequestReviewTarget{user: cur.Assignee})
-				}
-			} else {
-				prev.AddedRequestReview = slices.Delete(prev.AddedRequestReview, addedIndex, addedIndex+1)
-			}
-		} else {
-			removedIndex := slices.IndexFunc(prev.RemovedRequestReview, func(t issues_model.RequestReviewTarget) bool {
-				if cur.AssigneeTeam != nil {
-					return cur.AssigneeTeam.ID == t.ID() && t.Type() == "team"
-				}
-				return cur.Assignee.ID == t.ID() && t.Type() == "user"
-			})
-
-			// If for this target a RemovedRequestReview, then we remove that entry. If it's not found, then add it to the AddedRequestReview.
-			if removedIndex == -1 {
-				if cur.AssigneeTeam != nil {
-					prev.AddedRequestReview = append(prev.AddedRequestReview, &RequestReviewTarget{team: cur.AssigneeTeam})
-				} else {
-					prev.AddedRequestReview = append(prev.AddedRequestReview, &RequestReviewTarget{user: cur.Assignee})
-				}
-			} else {
-				prev.RemovedRequestReview = slices.Delete(prev.RemovedRequestReview, removedIndex, removedIndex+1)
-			}
-		}
-
-		// Propagate creation time.
-		prev.CreatedUnix = cur.CreatedUnix
-
-		// Remove the current comment since it has been combined to prev comment
-		issue.Comments = append(issue.Comments[:i], issue.Comments[i+1:]...)
-		i--
-	}
-}
-
-// combineLabelComments combine the nearby label comments as one.
-func combineLabelComments(issue *issues_model.Issue) {
-	var prev, cur *issues_model.Comment
-	for i := 0; i < len(issue.Comments); i++ {
-		cur = issue.Comments[i]
-		if i > 0 {
-			prev = issue.Comments[i-1]
-		}
-		if i == 0 || cur.Type != issues_model.CommentTypeLabel ||
-			(prev != nil && prev.PosterID != cur.PosterID) ||
-			(prev != nil && cur.CreatedUnix-prev.CreatedUnix >= 60) {
-			if cur.Type == issues_model.CommentTypeLabel && cur.Label != nil {
-				if cur.Content != "1" {
-					cur.RemovedLabels = append(cur.RemovedLabels, cur.Label)
-				} else {
-					cur.AddedLabels = append(cur.AddedLabels, cur.Label)
-				}
-			}
-			continue
-		}
-
-		if cur.Label != nil { // now cur MUST be label comment
-			if prev.Type == issues_model.CommentTypeLabel { // we can combine them only prev is a label comment
-				if cur.Content != "1" {
-					// remove labels from the AddedLabels list if the label that was removed is already
-					// in this list, and if it's not in this list, add the label to RemovedLabels
-					addedAndRemoved := false
-					for i, label := range prev.AddedLabels {
-						if cur.Label.ID == label.ID {
-							prev.AddedLabels = append(prev.AddedLabels[:i], prev.AddedLabels[i+1:]...)
-							addedAndRemoved = true
-							break
-						}
-					}
-					if !addedAndRemoved {
-						prev.RemovedLabels = append(prev.RemovedLabels, cur.Label)
-					}
-				} else {
-					// remove labels from the RemovedLabels list if the label that was added is already
-					// in this list, and if it's not in this list, add the label to AddedLabels
-					removedAndAdded := false
-					for i, label := range prev.RemovedLabels {
-						if cur.Label.ID == label.ID {
-							prev.RemovedLabels = append(prev.RemovedLabels[:i], prev.RemovedLabels[i+1:]...)
-							removedAndAdded = true
-							break
-						}
-					}
-					if !removedAndAdded {
-						prev.AddedLabels = append(prev.AddedLabels, cur.Label)
-					}
-				}
-				prev.CreatedUnix = cur.CreatedUnix
-				// remove the current comment since it has been combined to prev comment
-				issue.Comments = append(issue.Comments[:i], issue.Comments[i+1:]...)
-				i--
-			} else { // if prev is not a label comment, start a new group
-				if cur.Content != "1" {
-					cur.RemovedLabels = append(cur.RemovedLabels, cur.Label)
-				} else {
-					cur.AddedLabels = append(cur.AddedLabels, cur.Label)
-				}
-			}
-		}
-	}
 }
 
 // get all teams that current user can mention
