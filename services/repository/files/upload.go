@@ -60,7 +60,7 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	if len(opts.Files) != len(opts.FullPaths) {
-		return nil
+		return fmt.Errorf("The length of opts.Files and opts.FullPaths is not the same. This should never happen.")
 	}
 
 	uploads := make([]*repo_model.Upload, len(opts.Files))
