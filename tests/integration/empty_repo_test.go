@@ -5,6 +5,7 @@ package integration
 
 import (
 	"bytes"
+	"fmt"
 	"encoding/base64"
 	"io"
 	"mime/multipart"
