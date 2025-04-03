@@ -6,10 +6,8 @@ package files
 import (
 	"context"
 	"fmt"
-	"html"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 
 	git_model "code.gitea.io/gitea/models/git"
@@ -72,8 +70,10 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 		if err != nil {
 			return fmt.Errorf("GetUploadByUUID [uuids: %v]: %w", opts.Files[i], err)
 		}
-		uploads[i].Name = fileNameSanitize(html.UnescapeString(opts.FullPaths[i]))
-
+		uploads[i].Name, err = SanitizePath(opts.FullPaths[i])
+		if err != nil {
+			return fmt.Errorf("SanitizePath [path: %v]: %w", opts.FullPaths[i], err)
+		}
 		// Check file is not lfs locked, will return nil if lock setting not enabled
 		filepath := path.Join(opts.TreePath, uploads[i].Name)
 		lfsLock, err := git_model.GetTreePathLock(ctx, repo.ID, filepath)
@@ -163,19 +163,6 @@ func UploadRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	return repo_model.DeleteUploads(ctx, uploads...)
-}
-
-// From forgejo/services/repository/generate.go (but now allows /)
-var fileNameSanitizeRegexp = regexp.MustCompile(`(?i)\.\.|[<>:\"\\|?*\x{0000}-\x{001F}]|^(con|prn|aux|nul|com\d|lpt\d)$`)
-
-// Sanitize user input to valid OS filenames
-//
-//	       Based on https://github.com/sindresorhus/filename-reserved-regex
-//	Adds ".." to prevent directory traversal
-func fileNameSanitize(s string) string {
-	// Added this because I am not sure what Windows will deliver us \ or / but we need /.
-	s = strings.ReplaceAll(s, "\\", "/")
-	return strings.TrimSpace(fileNameSanitizeRegexp.ReplaceAllString(s, "_"))
 }
 
 func copyUploadedLFSFilesIntoRepository(infos []uploadInfo, t *TemporaryUploadRepository, treePath string) error {
