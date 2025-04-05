@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"code.gitea.io/gitea/models/db"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/timeutil"
-	"code.gitea.io/gitea/modules/util"
+	"forgejo.org/models/db"
+	"forgejo.org/modules/setting"
+	"forgejo.org/modules/timeutil"
+	"forgejo.org/modules/util"
 
 	"xorm.io/builder"
 )
@@ -293,6 +293,9 @@ func SetDefaultColumn(ctx context.Context, projectID, columnID int64) error {
 
 func GetColumnsByIDs(ctx context.Context, projectID int64, columnsIDs []int64) (ColumnList, error) {
 	columns := make([]*Column, 0, 5)
+	if len(columnsIDs) == 0 {
+		return columns, nil
+	}
 	if err := db.GetEngine(ctx).
 		Where("project_id =?", projectID).
 		In("id", columnsIDs).
