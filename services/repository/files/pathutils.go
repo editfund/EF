@@ -22,7 +22,7 @@ func SanitizePath(inputPath string) (string, error) {
 	for _, component := range pathComponents {
 		// Trim whitespace and apply regex sanitization
 		sanitizedComponent := strings.TrimSpace(fileNameComponentSanitizeRegexp.ReplaceAllString(component, "_"))
-		
+
 		// Skip empty components after sanitization
 		if sanitizedComponent != "" {
 			sanitizedComponents = append(sanitizedComponents, sanitizedComponent)
@@ -36,4 +36,3 @@ func SanitizePath(inputPath string) (string, error) {
 	reconstructedPath := path.Join(sanitizedComponents...)
 	return reconstructedPath, nil
 }
-
