@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	actions_model "forgejo.org/models/actions"
 	activities_model "forgejo.org/models/activities"
 	issues_model "forgejo.org/models/issues"
 	repo_model "forgejo.org/models/repo"
@@ -207,4 +208,13 @@ func (m *mailNotifier) RepoPendingTransfer(ctx context.Context, doer, newOwner *
 
 func (m *mailNotifier) NewUserSignUp(ctx context.Context, newUser *user_model.User) {
 	MailNewUser(ctx, newUser)
+}
+
+func (m *mailNotifier) ActionRunNowDone(ctx context.Context, run *actions_model.ActionRun, priorStatus actions_model.Status, lastRun *actions_model.ActionRun) {
+	if run.Status.IsSuccess() && lastRun.Status.IsSuccess() {
+		return
+	}
+	if err := MailActionRun(run, priorStatus, lastRun); err != nil {
+		log.Error("MailActionRunNowDone: %v", err)
+	}
 }
