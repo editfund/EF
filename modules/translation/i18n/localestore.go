@@ -1,4 +1,5 @@
 // Copyright 2022 The Gitea Authors. All rights reserved.
+// Copyright 2024 The Forgejo Authors. All rights reserved.
 // SPDX-License-Identifier: MIT
 
 package i18n
@@ -8,10 +9,10 @@ import (
 	"html/template"
 	"slices"
 
-	"code.gitea.io/gitea/modules/json"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/util"
+	"forgejo.org/modules/log"
+	"forgejo.org/modules/setting"
+	"forgejo.org/modules/translation/localeiter"
+	"forgejo.org/modules/util"
 )
 
 // This file implements the static LocaleStore that will not watch for changes
@@ -94,54 +95,20 @@ func (store *localeStore) AddLocaleByIni(langName, langDesc string, pluralRule P
 	return nil
 }
 
-func RecursivelyAddTranslationsFromJSON(locale *locale, object map[string]any, prefix string) error {
-	for key, value := range object {
-		var fullkey string
-		if prefix != "" {
-			fullkey = prefix + "." + key
-		} else {
-			fullkey = key
-		}
-
-		switch v := value.(type) {
-		case string:
-			// Check whether we are adding a plural form to the parent object, or a new nested JSON object.
-
-			if key == "zero" || key == "one" || key == "two" || key == "few" || key == "many" {
-				locale.newStyleMessages[prefix+PluralFormSeparator+key] = v
-			} else if key == "other" {
-				locale.newStyleMessages[prefix] = v
-			} else {
-				locale.newStyleMessages[fullkey] = v
-			}
-
-		case map[string]any:
-			err := RecursivelyAddTranslationsFromJSON(locale, v, fullkey)
-			if err != nil {
-				return err
-			}
-
-		case nil:
-		default:
-			return fmt.Errorf("Unrecognized JSON value '%s'", value)
-		}
-	}
-
-	return nil
-}
-
 func (store *localeStore) AddToLocaleFromJSON(langName string, source []byte) error {
 	locale, ok := store.localeMap[langName]
 	if !ok {
 		return ErrLocaleDoesNotExist
 	}
 
-	var result map[string]any
-	if err := json.Unmarshal(source, &result); err != nil {
-		return err
-	}
-
-	return RecursivelyAddTranslationsFromJSON(locale, result, "")
+	return localeiter.IterateMessagesNextContent(source, func(key, pluralForm, value string) error {
+		msgKey := key
+		if pluralForm != "" {
+			msgKey = key + PluralFormSeparator + pluralForm
+		}
+		locale.newStyleMessages[msgKey] = value
+		return nil
+	})
 }
 
 func (l *locale) LookupNewStyleMessage(trKey string) string {
@@ -225,9 +192,9 @@ func (l *locale) TrString(trKey string, trArgs ...any) string {
 		format = msg
 	} else {
 		// First fallback: old-style translation
-		idx, ok := l.store.trKeyToIdxMap[trKey]
+		idx, foundIndex := l.store.trKeyToIdxMap[trKey]
 		found := false
-		if ok {
+		if foundIndex {
 			if msg, ok := l.idxToMsgMap[idx]; ok {
 				format = msg // use the found translation
 				found = true
@@ -239,7 +206,8 @@ func (l *locale) TrString(trKey string, trArgs ...any) string {
 			if defaultLang, ok := l.store.localeMap[l.store.defaultLang]; ok {
 				if msg := defaultLang.LookupNewStyleMessage(trKey); msg != "" {
 					format = msg
-				} else {
+					found = true
+				} else if foundIndex {
 					// Third fallback: old-style default language
 					if msg, ok := defaultLang.idxToMsgMap[idx]; ok {
 						format = msg
@@ -303,6 +271,10 @@ func (l *locale) TrPluralString(count any, trKey string, trArgs ...any) template
 
 // HasKey returns whether a key is present in this locale or not
 func (l *locale) HasKey(trKey string) bool {
+	_, ok := l.newStyleMessages[trKey]
+	if ok {
+		return true
+	}
 	idx, ok := l.store.trKeyToIdxMap[trKey]
 	if !ok {
 		return false

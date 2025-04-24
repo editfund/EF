@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/setting"
+	"forgejo.org/modules/log"
+	"forgejo.org/modules/setting"
 
 	"github.com/hashicorp/go-version"
 )
@@ -59,15 +59,7 @@ func loadGitVersion() error {
 		return fmt.Errorf("invalid git version output: %s", stdout)
 	}
 
-	var versionString string
-
-	// Handle special case on Windows.
-	i := strings.Index(fields[2], "windows")
-	if i >= 1 {
-		versionString = fields[2][:i-1]
-	} else {
-		versionString = fields[2]
-	}
+	versionString := fields[2]
 
 	var err error
 	gitVersion, err = version.NewVersion(versionString)
@@ -280,21 +272,51 @@ func syncGitConfig() (err error) {
 	// Thus the owner uid/gid for files on these filesystems will be marked as root.
 	// As Gitea now always use its internal git config file, and access to the git repositories is managed through Gitea,
 	// it is now safe to set "safe.directory=*" for internal usage only.
-	// Please note: the wildcard "*" is only supported by Git 2.30.4/2.31.3/2.32.2/2.33.3/2.34.3/2.35.3/2.36 and later
-	// Although only supported by Git 2.30.4/2.31.3/2.32.2/2.33.3/2.34.3/2.35.3/2.36 and later - this setting is tolerated by earlier versions
+	// Please note: the wildcard "*" is only supported by Git 2.30.4/2.31.3/2.32.2/2.33.3/2.34.3/2.35.3/2.36 and later,
+	// but is tolerated by earlier versions
 	if err := configAddNonExist("safe.directory", "*"); err != nil {
 		return err
 	}
-	if runtime.GOOS == "windows" {
-		if err := configSet("core.longpaths", "true"); err != nil {
+
+	switch setting.Repository.Signing.Format {
+	case "ssh":
+		// First do a git version check.
+		if CheckGitVersionAtLeast("2.34.0") != nil {
+			return errors.New("ssh signing requires Git >= 2.34.0")
+		}
+
+		// Get the ssh-keygen binary that Git will use.
+		// This can be overriden in app.ini in [git.config] section, so we must
+		// query this information.
+		sshKeygenPath, err := configGet("gpg.ssh.program")
+		if err != nil {
 			return err
 		}
-		if setting.Git.DisableCoreProtectNTFS {
-			err = configSet("core.protectNTFS", "false")
-		} else {
-			err = configUnsetAll("core.protectNTFS", "false")
+		// git is very stubborn and does not give a default value, so we must do
+		// this ourselves.
+		if len(sshKeygenPath) == 0 {
+			// Default value of git, very unlikely to change.
+			// https://github.com/git/git/blob/5b97a56fa0e7d580dc8865b73107407c9b3f0eff/gpg-interface.c#L116
+			sshKeygenPath = "ssh-keygen"
 		}
-		if err != nil {
+
+		// Although there's a version requirement of 8.2p1, there's no cross-version
+		// method to get the version of ssh-keygen. Therefore we do a simple binary
+		// presence check and hope for the best.
+		if _, err := exec.LookPath(sshKeygenPath); err != nil {
+			if errors.Is(err, exec.ErrNotFound) {
+				return errors.New("git signing requires a ssh-keygen binary")
+			}
+			return err
+		}
+
+		if err := configSet("gpg.format", "ssh"); err != nil {
+			return err
+		}
+		// openpgp is already the default value, so in the case of a non SSH format
+		// set the value to openpgp.
+	default:
+		if err := configSet("gpg.format", "openpgp"); err != nil {
 			return err
 		}
 	}
@@ -343,6 +365,15 @@ func CheckGitVersionEqual(equal string) error {
 		return fmt.Errorf("installed git binary version %s is not equal to %s", gitVersion.Original(), equal)
 	}
 	return nil
+}
+
+func configGet(key string) (string, error) {
+	stdout, _, err := NewCommand(DefaultContext, "config", "--global", "--get").AddDynamicArguments(key).RunStdString(nil)
+	if err != nil && !IsErrorExitCode(err, 1) {
+		return "", fmt.Errorf("failed to get git config %s, err: %w", key, err)
+	}
+
+	return strings.TrimSpace(stdout), nil
 }
 
 func configSet(key, value string) error {

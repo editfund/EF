@@ -5,25 +5,19 @@
 package git
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
 	"slices"
 	"strings"
 
-	"code.gitea.io/gitea/modules/git/foreachref"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/util"
+	"forgejo.org/modules/git/foreachref"
+	"forgejo.org/modules/log"
+	"forgejo.org/modules/util"
 )
 
 // TagPrefix tags prefix path on the repository
 const TagPrefix = "refs/tags/"
-
-// IsTagExist returns true if given tag exists in the repository.
-func IsTagExist(ctx context.Context, repoPath, name string) bool {
-	return IsReferenceExist(ctx, repoPath, TagPrefix+name)
-}
 
 // CreateTag create one tag in the repository
 func (repo *Repository) CreateTag(name, revision string) error {
