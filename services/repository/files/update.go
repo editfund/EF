@@ -5,12 +5,12 @@ package files
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path"
 	"strings"
 	"time"
-	"errors"
 
 	"forgejo.org/models"
 	git_model "forgejo.org/models/git"
@@ -93,7 +93,7 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 	}
 
 	if opts.IsDir {
-		var new_opts_files []*ChangeRepoFile
+		var newOptsFiles []*ChangeRepoFile
 		for _, file := range opts.Files {
 			if file.Operation != "delete" {
 				return nil, errors.New("invalid operation: only delete is allowed for directory paths")
@@ -101,19 +101,18 @@ func ChangeRepoFiles(ctx context.Context, repo *repo_model.Repository, doer *use
 			treePath := CleanUploadFileName(file.TreePath)
 			filelist, err := gitRepo.LsFilesFromDirectory(treePath, opts.OldBranch)
 			if err != nil {
-			    return nil, err
+				return nil, err
 			}
 			for _, filename := range filelist {
-				if len(filename) > 0{
-
-					new_opts_files = append(new_opts_files, &ChangeRepoFile{
-        				    Operation: "delete",
-        				    TreePath:  filename,
+				if len(filename) > 0 {
+					newOptsFiles = append(newOptsFiles, &ChangeRepoFile{
+						Operation: "delete",
+						TreePath:  filename,
 					})
 				}
 			}
 		}
-		opts.Files = new_opts_files
+		opts.Files = newOptsFiles
 	}
 
 	var treePaths []string

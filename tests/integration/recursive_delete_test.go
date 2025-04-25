@@ -140,8 +140,8 @@ func TestRecursiveDeleteSubSub(t *testing.T) {
 		resp1 := MakeRequest(t, req1, http.StatusCreated)
 		var fileResponse1 api.FileResponse
 		DecodeJSON(t, resp1, &fileResponse1)
-		assert.EqualValues(t, fileResponse1.Content.Path, treePath1)
-		assert.EqualValues(t, fileResponse1.Content.Size, 26)
+		assert.Equal(t, fileResponse1.Content.Path, treePath1)
+		assert.EqualValues(t, 26, fileResponse1.Content.Size)
 
 		createFileOptions2 := getCreateOptionsFile2()
 		treePath2 := "dir2/file2.txt"
@@ -149,8 +149,8 @@ func TestRecursiveDeleteSubSub(t *testing.T) {
 		resp2 := MakeRequest(t, req2, http.StatusCreated)
 		var fileResponse2 api.FileResponse
 		DecodeJSON(t, resp2, &fileResponse2)
-		assert.EqualValues(t, fileResponse2.Content.Path, treePath2)
-		assert.EqualValues(t, fileResponse2.Content.Size, 31)
+		assert.Equal(t, fileResponse2.Content.Path, treePath2)
+		assert.EqualValues(t, 31, fileResponse2.Content.Size)
 
 		createFileOptions3 := getCreateOptionsFile3()
 		treePath3 := "dir2/dir3/file3.txt"
@@ -158,8 +158,8 @@ func TestRecursiveDeleteSubSub(t *testing.T) {
 		resp3 := MakeRequest(t, req3, http.StatusCreated)
 		var fileResponse3 api.FileResponse
 		DecodeJSON(t, resp3, &fileResponse3)
-		assert.EqualValues(t, fileResponse3.Content.Path, treePath3)
-		assert.EqualValues(t, fileResponse3.Content.Size, 36)
+		assert.Equal(t, fileResponse3.Content.Path, treePath3)
+		assert.EqualValues(t, 36, fileResponse3.Content.Size)
 
 		createFileOptions4 := getCreateOptionsFile4()
 		treePath4 := "dir2/dir4/file4.txt"
@@ -167,8 +167,8 @@ func TestRecursiveDeleteSubSub(t *testing.T) {
 		resp4 := MakeRequest(t, req4, http.StatusCreated)
 		var fileResponse4 api.FileResponse
 		DecodeJSON(t, resp4, &fileResponse4)
-		assert.EqualValues(t, fileResponse4.Content.Path, treePath4)
-		assert.EqualValues(t, fileResponse4.Content.Size, 36)
+		assert.Equal(t, fileResponse4.Content.Path, treePath4)
+		assert.EqualValues(t, 36, fileResponse4.Content.Size)
 
 		// Verify file1 exists
 		getReq1 := NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath1))
@@ -225,7 +225,6 @@ func TestRecursiveDeleteSubSub(t *testing.T) {
 		// Verify file4 exists
 		getReq4 = NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath4))
 		MakeRequest(t, getReq4, http.StatusOK)
-
 	})
 }
 
@@ -250,8 +249,8 @@ func TestRecursiveDeleteSub(t *testing.T) {
 		resp1 := MakeRequest(t, req1, http.StatusCreated)
 		var fileResponse1 api.FileResponse
 		DecodeJSON(t, resp1, &fileResponse1)
-		assert.EqualValues(t, fileResponse1.Content.Path, treePath1)
-		assert.EqualValues(t, fileResponse1.Content.Size, 26)
+		assert.Equal(t, fileResponse1.Content.Path, treePath1)
+		assert.EqualValues(t, 26, fileResponse1.Content.Size)
 
 		createFileOptions2 := getCreateOptionsFile2()
 		treePath2 := "dir2/file2.txt"
@@ -259,8 +258,8 @@ func TestRecursiveDeleteSub(t *testing.T) {
 		resp2 := MakeRequest(t, req2, http.StatusCreated)
 		var fileResponse2 api.FileResponse
 		DecodeJSON(t, resp2, &fileResponse2)
-		assert.EqualValues(t, fileResponse2.Content.Path, treePath2)
-		assert.EqualValues(t, fileResponse2.Content.Size, 31)
+		assert.Equal(t, fileResponse2.Content.Path, treePath2)
+		assert.EqualValues(t, 31, fileResponse2.Content.Size)
 
 		createFileOptions3 := getCreateOptionsFile3()
 		treePath3 := "dir2/dir3/file3.txt"
@@ -268,8 +267,8 @@ func TestRecursiveDeleteSub(t *testing.T) {
 		resp3 := MakeRequest(t, req3, http.StatusCreated)
 		var fileResponse3 api.FileResponse
 		DecodeJSON(t, resp3, &fileResponse3)
-		assert.EqualValues(t, fileResponse3.Content.Path, treePath3)
-		assert.EqualValues(t, fileResponse3.Content.Size, 36)
+		assert.Equal(t, fileResponse3.Content.Path, treePath3)
+		assert.EqualValues(t, 36, fileResponse3.Content.Size)
 
 		createFileOptions4 := getCreateOptionsFile4()
 		treePath4 := "dir2/dir4/file4.txt"
@@ -277,8 +276,8 @@ func TestRecursiveDeleteSub(t *testing.T) {
 		resp4 := MakeRequest(t, req4, http.StatusCreated)
 		var fileResponse4 api.FileResponse
 		DecodeJSON(t, resp4, &fileResponse4)
-		assert.EqualValues(t, fileResponse4.Content.Path, treePath4)
-		assert.EqualValues(t, fileResponse4.Content.Size, 36)
+		assert.Equal(t, fileResponse4.Content.Path, treePath4)
+		assert.EqualValues(t, 36, fileResponse4.Content.Size)
 
 		// Verify file1 exists
 		getReq1 := NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath1))
@@ -335,7 +334,6 @@ func TestRecursiveDeleteSub(t *testing.T) {
 		// Verify file4 exists
 		getReq4 = NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath4))
 		MakeRequest(t, getReq4, http.StatusNotFound)
-
 	})
 }
 
@@ -360,8 +358,8 @@ func TestRecursiveDeleteRoot(t *testing.T) {
 		resp1 := MakeRequest(t, req1, http.StatusCreated)
 		var fileResponse1 api.FileResponse
 		DecodeJSON(t, resp1, &fileResponse1)
-		assert.EqualValues(t, fileResponse1.Content.Path, treePath1)
-		assert.EqualValues(t, fileResponse1.Content.Size, 26)
+		assert.Equal(t, fileResponse1.Content.Path, treePath1)
+		assert.EqualValues(t, 26, fileResponse1.Content.Size)
 
 		createFileOptions2 := getCreateOptionsFile2()
 		treePath2 := "dir2/file2.txt"
@@ -369,8 +367,8 @@ func TestRecursiveDeleteRoot(t *testing.T) {
 		resp2 := MakeRequest(t, req2, http.StatusCreated)
 		var fileResponse2 api.FileResponse
 		DecodeJSON(t, resp2, &fileResponse2)
-		assert.EqualValues(t, fileResponse2.Content.Path, treePath2)
-		assert.EqualValues(t, fileResponse2.Content.Size, 31)
+		assert.Equal(t, fileResponse2.Content.Path, treePath2)
+		assert.EqualValues(t, 31, fileResponse2.Content.Size)
 
 		createFileOptions3 := getCreateOptionsFile3()
 		treePath3 := "dir2/dir3/file3.txt"
@@ -378,8 +376,8 @@ func TestRecursiveDeleteRoot(t *testing.T) {
 		resp3 := MakeRequest(t, req3, http.StatusCreated)
 		var fileResponse3 api.FileResponse
 		DecodeJSON(t, resp3, &fileResponse3)
-		assert.EqualValues(t, fileResponse3.Content.Path, treePath3)
-		assert.EqualValues(t, fileResponse3.Content.Size, 36)
+		assert.Equal(t, fileResponse3.Content.Path, treePath3)
+		assert.EqualValues(t, 36, fileResponse3.Content.Size)
 
 		createFileOptions4 := getCreateOptionsFile4()
 		treePath4 := "dir2/dir4/file4.txt"
@@ -387,8 +385,8 @@ func TestRecursiveDeleteRoot(t *testing.T) {
 		resp4 := MakeRequest(t, req4, http.StatusCreated)
 		var fileResponse4 api.FileResponse
 		DecodeJSON(t, resp4, &fileResponse4)
-		assert.EqualValues(t, fileResponse4.Content.Path, treePath4)
-		assert.EqualValues(t, fileResponse4.Content.Size, 36)
+		assert.Equal(t, fileResponse4.Content.Path, treePath4)
+		assert.EqualValues(t, 36, fileResponse4.Content.Size)
 
 		// Verify file1 exists
 		getReq1 := NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath1))
@@ -445,7 +443,6 @@ func TestRecursiveDeleteRoot(t *testing.T) {
 		// Verify file4 exists
 		getReq4 = NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath4))
 		MakeRequest(t, getReq4, http.StatusNotFound)
-
 	})
 }
 
@@ -465,8 +462,8 @@ func TestRecursiveDeleteAnonymous(t *testing.T) {
 		resp1 := MakeRequest(t, req1, http.StatusCreated)
 		var fileResponse1 api.FileResponse
 		DecodeJSON(t, resp1, &fileResponse1)
-		assert.EqualValues(t, fileResponse1.Content.Path, treePath1)
-		assert.EqualValues(t, fileResponse1.Content.Size, 26)
+		assert.Equal(t, fileResponse1.Content.Path, treePath1)
+		assert.EqualValues(t, 26, fileResponse1.Content.Size)
 
 		createFileOptions2 := getCreateOptionsFile2()
 		treePath2 := "dir2/file2.txt"
@@ -474,8 +471,8 @@ func TestRecursiveDeleteAnonymous(t *testing.T) {
 		resp2 := MakeRequest(t, req2, http.StatusCreated)
 		var fileResponse2 api.FileResponse
 		DecodeJSON(t, resp2, &fileResponse2)
-		assert.EqualValues(t, fileResponse2.Content.Path, treePath2)
-		assert.EqualValues(t, fileResponse2.Content.Size, 31)
+		assert.Equal(t, fileResponse2.Content.Path, treePath2)
+		assert.EqualValues(t, 31, fileResponse2.Content.Size)
 
 		createFileOptions3 := getCreateOptionsFile3()
 		treePath3 := "dir2/dir3/file3.txt"
@@ -483,8 +480,8 @@ func TestRecursiveDeleteAnonymous(t *testing.T) {
 		resp3 := MakeRequest(t, req3, http.StatusCreated)
 		var fileResponse3 api.FileResponse
 		DecodeJSON(t, resp3, &fileResponse3)
-		assert.EqualValues(t, fileResponse3.Content.Path, treePath3)
-		assert.EqualValues(t, fileResponse3.Content.Size, 36)
+		assert.Equal(t, fileResponse3.Content.Path, treePath3)
+		assert.EqualValues(t, 36, fileResponse3.Content.Size)
 
 		createFileOptions4 := getCreateOptionsFile4()
 		treePath4 := "dir2/dir4/file4.txt"
@@ -492,8 +489,8 @@ func TestRecursiveDeleteAnonymous(t *testing.T) {
 		resp4 := MakeRequest(t, req4, http.StatusCreated)
 		var fileResponse4 api.FileResponse
 		DecodeJSON(t, resp4, &fileResponse4)
-		assert.EqualValues(t, fileResponse4.Content.Path, treePath4)
-		assert.EqualValues(t, fileResponse4.Content.Size, 36)
+		assert.Equal(t, fileResponse4.Content.Path, treePath4)
+		assert.EqualValues(t, 36, fileResponse4.Content.Size)
 
 		// Verify file1 exists
 		getReq1 := NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath1))
@@ -514,7 +511,6 @@ func TestRecursiveDeleteAnonymous(t *testing.T) {
 		treePathDirDel := ""
 		req := NewRequest(t, "GET", fmt.Sprintf("/%s/%s/_delete_path/master/%s", user2.Name, repo1.Name, treePathDirDel))
 		MakeRequest(t, req, http.StatusSeeOther)
-
 	})
 }
 
@@ -535,8 +531,8 @@ func TestRecursiveDeleteOther(t *testing.T) {
 		resp1 := MakeRequest(t, req1, http.StatusCreated)
 		var fileResponse1 api.FileResponse
 		DecodeJSON(t, resp1, &fileResponse1)
-		assert.EqualValues(t, fileResponse1.Content.Path, treePath1)
-		assert.EqualValues(t, fileResponse1.Content.Size, 26)
+		assert.Equal(t, fileResponse1.Content.Path, treePath1)
+		assert.EqualValues(t, 26, fileResponse1.Content.Size)
 
 		createFileOptions2 := getCreateOptionsFile2()
 		treePath2 := "dir2/file2.txt"
@@ -544,8 +540,8 @@ func TestRecursiveDeleteOther(t *testing.T) {
 		resp2 := MakeRequest(t, req2, http.StatusCreated)
 		var fileResponse2 api.FileResponse
 		DecodeJSON(t, resp2, &fileResponse2)
-		assert.EqualValues(t, fileResponse2.Content.Path, treePath2)
-		assert.EqualValues(t, fileResponse2.Content.Size, 31)
+		assert.Equal(t, fileResponse2.Content.Path, treePath2)
+		assert.EqualValues(t, 31, fileResponse2.Content.Size)
 
 		createFileOptions3 := getCreateOptionsFile3()
 		treePath3 := "dir2/dir3/file3.txt"
@@ -553,8 +549,8 @@ func TestRecursiveDeleteOther(t *testing.T) {
 		resp3 := MakeRequest(t, req3, http.StatusCreated)
 		var fileResponse3 api.FileResponse
 		DecodeJSON(t, resp3, &fileResponse3)
-		assert.EqualValues(t, fileResponse3.Content.Path, treePath3)
-		assert.EqualValues(t, fileResponse3.Content.Size, 36)
+		assert.Equal(t, fileResponse3.Content.Path, treePath3)
+		assert.EqualValues(t, 36, fileResponse3.Content.Size)
 
 		createFileOptions4 := getCreateOptionsFile4()
 		treePath4 := "dir2/dir4/file4.txt"
@@ -562,8 +558,8 @@ func TestRecursiveDeleteOther(t *testing.T) {
 		resp4 := MakeRequest(t, req4, http.StatusCreated)
 		var fileResponse4 api.FileResponse
 		DecodeJSON(t, resp4, &fileResponse4)
-		assert.EqualValues(t, fileResponse4.Content.Path, treePath4)
-		assert.EqualValues(t, fileResponse4.Content.Size, 36)
+		assert.Equal(t, fileResponse4.Content.Path, treePath4)
+		assert.EqualValues(t, 36, fileResponse4.Content.Size)
 
 		// Verify file1 exists
 		getReq1 := NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user2.Name, repo1.Name, treePath1))
@@ -587,7 +583,6 @@ func TestRecursiveDeleteOther(t *testing.T) {
 		session = loginUser(t, user4.Name)
 		req := NewRequest(t, "GET", fmt.Sprintf("/%s/%s/_delete_path/master/%s", user2.Name, repo1.Name, treePathDirDel))
 		session.MakeRequest(t, req, http.StatusNotFound)
-
 	})
 }
 
@@ -613,8 +608,8 @@ func TestRecursiveDeleteRootColab(t *testing.T) {
 		resp1 := MakeRequest(t, req1, http.StatusCreated)
 		var fileResponse1 api.FileResponse
 		DecodeJSON(t, resp1, &fileResponse1)
-		assert.EqualValues(t, fileResponse1.Content.Path, treePath1)
-		assert.EqualValues(t, fileResponse1.Content.Size, 26)
+		assert.Equal(t, fileResponse1.Content.Path, treePath1)
+		assert.EqualValues(t, 26, fileResponse1.Content.Size)
 
 		createFileOptions2 := getCreateOptionsFile2()
 		treePath2 := "dir2/file2.txt"
@@ -622,8 +617,8 @@ func TestRecursiveDeleteRootColab(t *testing.T) {
 		resp2 := MakeRequest(t, req2, http.StatusCreated)
 		var fileResponse2 api.FileResponse
 		DecodeJSON(t, resp2, &fileResponse2)
-		assert.EqualValues(t, fileResponse2.Content.Path, treePath2)
-		assert.EqualValues(t, fileResponse2.Content.Size, 31)
+		assert.Equal(t, fileResponse2.Content.Path, treePath2)
+		assert.EqualValues(t, 31, fileResponse2.Content.Size)
 
 		createFileOptions3 := getCreateOptionsFile3()
 		treePath3 := "dir2/dir3/file3.txt"
@@ -631,8 +626,8 @@ func TestRecursiveDeleteRootColab(t *testing.T) {
 		resp3 := MakeRequest(t, req3, http.StatusCreated)
 		var fileResponse3 api.FileResponse
 		DecodeJSON(t, resp3, &fileResponse3)
-		assert.EqualValues(t, fileResponse3.Content.Path, treePath3)
-		assert.EqualValues(t, fileResponse3.Content.Size, 36)
+		assert.Equal(t, fileResponse3.Content.Path, treePath3)
+		assert.EqualValues(t, 36, fileResponse3.Content.Size)
 
 		createFileOptions4 := getCreateOptionsFile4()
 		treePath4 := "dir2/dir4/file4.txt"
@@ -640,8 +635,8 @@ func TestRecursiveDeleteRootColab(t *testing.T) {
 		resp4 := MakeRequest(t, req4, http.StatusCreated)
 		var fileResponse4 api.FileResponse
 		DecodeJSON(t, resp4, &fileResponse4)
-		assert.EqualValues(t, fileResponse4.Content.Path, treePath4)
-		assert.EqualValues(t, fileResponse4.Content.Size, 36)
+		assert.Equal(t, fileResponse4.Content.Path, treePath4)
+		assert.EqualValues(t, 36, fileResponse4.Content.Size)
 
 		// Verify file1 exists
 		getReq1 := NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user3.Name, repo3.Name, treePath1)).AddTokenAuth(token2)
@@ -698,6 +693,5 @@ func TestRecursiveDeleteRootColab(t *testing.T) {
 		// Verify file4 exists
 		getReq4 = NewRequest(t, "GET", fmt.Sprintf("/api/v1/repos/%s/%s/contents/%s", user3.Name, repo3.Name, treePath4)).AddTokenAuth(token2)
 		MakeRequest(t, getReq4, http.StatusNotFound)
-
 	})
 }

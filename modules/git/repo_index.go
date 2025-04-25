@@ -104,7 +104,7 @@ func (repo *Repository) LsFiles(filenames ...string) ([]string, error) {
 }
 
 // Gives a list of all files in a directory and below
-func (repo *Repository) LsFilesFromDirectory(directory string, branch string) ([]string, error) {
+func (repo *Repository) LsFilesFromDirectory(directory, branch string) ([]string, error) {
 	if branch == "" {
 		return nil, errors.New("branch not found in context URL")
 	}
