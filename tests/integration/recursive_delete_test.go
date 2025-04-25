@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	auth_model "forgejo.org/gitea/models/auth"
-	repo_model "forgejo.org/gitea/models/repo"
-	"forgejo.org/gitea/models/unittest"
-	user_model "forgejo.org/gitea/models/user"
-	api "forgejo.org/gitea/modules/structs"
+	auth_model "forgejo.org/models/auth"
+	repo_model "forgejo.org/models/repo"
+	"forgejo.org/models/unittest"
+	user_model "forgejo.org/models/user"
+	api "forgejo.org/modules/structs"
 	"github.com/stretchr/testify/assert"
 )
 
