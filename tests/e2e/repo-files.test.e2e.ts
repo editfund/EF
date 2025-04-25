@@ -20,7 +20,7 @@ import {test, dynamic_id, save_visual} from './utils_e2e.ts';
 
 test.use({user: 'user2'});
 
-test('drag and drop upload a', async ({page}) => {
+test('drag and drop upload normal and special characters', async ({page}) => {
   const response = await page.goto(`/user2/file-uploads/_upload/main/`);
   expect(response?.status()).toBe(200); // Status OK
 
@@ -51,11 +51,11 @@ test('drag and drop upload a', async ({page}) => {
   await expect(page.getByRole('link', {name: 'double/nested/file.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/äüöÄÜÖß.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/Ʉ₦ł₵ØĐɆ.txt'})).toBeVisible();
-  await expect(page.locator('#diff-file-boxes').getByRole('link', {name: 'root_file.txt', exact: true})).toBeVisible();
+  await expect(page.getByRole('link', {name: 'root_file.txt'})).toBeVisible();
   await save_visual(page);
 });
 
-test('drag and drop upload b', async ({page}) => {
+test('drag and drop upload strange paths and spaces', async ({page}) => {
   const response = await page.goto(`/user2/file-uploads/_upload/main/`);
   expect(response?.status()).toBe(200); // Status OK
 
@@ -86,6 +86,6 @@ test('drag and drop upload b', async ({page}) => {
   await expect(page.getByRole('link', {name: '_/dots_vanish.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/badfirstslash.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/S P  A   C   E    !.txt'})).toBeVisible();
-  await expect(page.locator('#diff-file-boxes').getByRole('link', {name: '_/_/dots.txt', exact: true})).toBeVisible();
+  await expect(page.getByRole('link', {name: '_/_/dots.txt'})).toBeVisible();
   await save_visual(page);
 });
