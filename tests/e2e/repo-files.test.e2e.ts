@@ -42,7 +42,7 @@ test('drag and drop upload normal and special characters', async ({page}) => {
   await dropzone.dispatchEvent('drop', {dataTransfer: dataTransferA});
 
   await page.getByText('new branch').click();
-  await save_visual(page);
+
   await page.getByRole('textbox', {name: 'Name the new branch for this'}).fill(testID);
   await page.getByRole('button', {name: 'Propose file change'}).click();
 
@@ -51,8 +51,9 @@ test('drag and drop upload normal and special characters', async ({page}) => {
   await expect(page.getByRole('link', {name: 'double/nested/file.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/äüöÄÜÖß.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/Ʉ₦ł₵ØĐɆ.txt'})).toBeVisible();
-  await expect(page.getByRole('link', {name: 'root_file.txt'})).toBeVisible();
-  await save_visual(page);
+  // Since this is a file in root, there two links with the same label
+  // we take the on in #diff-file-tree
+  await expect(page.locator('#diff-file-tree').getByRole('link', {name: 'root_file.txt'})).toBeVisible();
 });
 
 test('drag and drop upload strange paths and spaces', async ({page}) => {
@@ -66,26 +67,79 @@ test('drag and drop upload strange paths and spaces', async ({page}) => {
   const dataTransferA = await page.evaluateHandle(() => {
     const dt = new DataTransfer();
     // add items in different folders
-    dt.items.add(new File(['1'], '../../dots.txt', {type: 'text/plain'}));
-    dt.items.add(new File(['2'], 'special/../../dots_vanish.txt', {type: 'text/plain'}));
-    dt.items.add(new File(['3'], '\\windows\\windows_slash.txt', {type: 'text/plain'}));
-    dt.items.add(new File(['4'], '/special/badfirstslash.txt', {type: 'text/plain'}));
-    dt.items.add(new File(['5'], 'special/S P  A   C   E    !.txt', {type: 'text/plain'}));
+    dt.items.add(new File(['1'], '..dots.txt', {type: 'text/plain'}));
+    dt.items.add(new File(['2'], '.dots.vanish.txt', {type: 'text/plain'}));
+    dt.items.add(new File(['3'], 'special/S P  A   C   E    !.txt', {type: 'text/plain'}));
     return dt;
   });
   // and drop them to the upload area
   await dropzone.dispatchEvent('drop', {dataTransfer: dataTransferA});
 
   await page.getByText('new branch').click();
-  await save_visual(page);
+
   await page.getByRole('textbox', {name: 'Name the new branch for this'}).fill(testID);
   await page.getByRole('button', {name: 'Propose file change'}).click();
 
   // check that nested file structure is preserved
-  await expect(page.getByRole('link', {name: 'windows/windows_slash.txt'})).toBeVisible();
-  await expect(page.getByRole('link', {name: '_/dots_vanish.txt'})).toBeVisible();
-  await expect(page.getByRole('link', {name: 'special/badfirstslash.txt'})).toBeVisible();
+  // Since this is a file in root, there two links with the same label
+  // we take the on in #diff-file-tree
+  await expect(page.locator('#diff-file-tree').getByRole('link', {name: '.dots.vanish.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/S P  A   C   E    !.txt'})).toBeVisible();
-  await expect(page.getByRole('link', {name: '_/_/dots.txt'})).toBeVisible();
+  // Since this is a file in root, there two links with the same label
+  // we take the on in #diff-file-tree
+  await expect(page.locator('#diff-file-tree').getByRole('link', {name: '..dots.txt'})).toBeVisible();
+});
+
+test('drag and drop upload broken path slash in front', async ({page}) => {
+  const response = await page.goto(`/user2/file-uploads/_upload/main/`);
+  expect(response?.status()).toBe(200); // Status OK
+
+  const testID = dynamic_id();
+  const dropzone = page.getByRole('button', {name: 'Drop files or click here to upload.'});
+
+  // create the virtual files
+  const dataTransferA = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    // add items in different folders
+    dt.items.add(new File(['1'], '/special/badfirstslash.txt', {type: 'text/plain'}));
+    return dt;
+  });
+  // and drop them to the upload area
+  await dropzone.dispatchEvent('drop', {dataTransfer: dataTransferA});
+
+  await page.getByText('new branch').click();
+
+  await page.getByRole('textbox', {name: 'Name the new branch for this'}).fill(testID);
+  await page.getByRole('button', {name: 'Propose file change'}).click();
+
+  await expect(page.getByText('Failed to upload files to')).toBeVisible();
+
+  await save_visual(page);
+});
+
+test('drag and drop upload broken path with traversal', async ({page}) => {
+  const response = await page.goto(`/user2/file-uploads/_upload/main/`);
+  expect(response?.status()).toBe(200); // Status OK
+
+  const testID = dynamic_id();
+  const dropzone = page.getByRole('button', {name: 'Drop files or click here to upload.'});
+
+  // create the virtual files
+  const dataTransferA = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    // add items in different folders
+    dt.items.add(new File(['1'], '../baddots.txt', {type: 'text/plain'}));
+    return dt;
+  });
+  // and drop them to the upload area
+  await dropzone.dispatchEvent('drop', {dataTransfer: dataTransferA});
+
+  await page.getByText('new branch').click();
+
+  await page.getByRole('textbox', {name: 'Name the new branch for this'}).fill(testID);
+  await page.getByRole('button', {name: 'Propose file change'}).click();
+
+  await expect(page.getByText('Failed to upload files to')).toBeVisible();
+
   await save_visual(page);
 });

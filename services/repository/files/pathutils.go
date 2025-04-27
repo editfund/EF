@@ -9,12 +9,19 @@ import (
 	"strings"
 )
 
-var fileNameComponentSanitizeRegexp = regexp.MustCompile(`(?i)\.\.|[<>:\"/\\|?*\x{0000}-\x{001F}]|^(con|prn|aux|nul|com\d|lpt\d)$`)
+// var fileNameComponentSanitizeRegexp = regexp.MustCompile(`(?i)\.\.|[<>:\"/\\|?*\x{0000}-\x{001F}]|^(con|prn|aux|nul|com\d|lpt\d)$`)
+var fileNameComponentSanitizeRegexp = regexp.MustCompile(`(?i)[<>:\"/\\|?*\x{0000}-\x{001F}]|^(con|prn|aux|nul|com\d|lpt\d)$`)
 
 // SanitizePath cleans and validates a file path
 func SanitizePath(inputPath string) (string, error) {
 	// Normalize path separators
 	s := strings.ReplaceAll(inputPath, "\\", "/")
+
+	// We don't want a / or \\ as the beginning of a path
+	if strings.HasPrefix(inputPath, "/") {
+		return "", fmt.Errorf("path starts with / : %s", inputPath)
+	}
+
 	// Clean the path
 	s = path.Clean(s)
 	// Split the path components
@@ -22,6 +29,15 @@ func SanitizePath(inputPath string) (string, error) {
 	// Sanitize each path component
 	var sanitizedComponents []string
 	for _, component := range pathComponents {
+		// There is no reason why there should be a path segment with ..
+		if component == ".." {
+			return "", fmt.Errorf("path contains directory traversal: %s", s)
+		}
+		// There is no reason why there should be a path segment with .
+		if component == "." {
+			return "", fmt.Errorf("path contains directory traversal: %s", s)
+		}
+
 		// Trim whitespace and apply regex sanitization
 		sanitizedComponent := strings.TrimSpace(fileNameComponentSanitizeRegexp.ReplaceAllString(component, "_"))
 
