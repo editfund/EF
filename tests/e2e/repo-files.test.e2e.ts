@@ -53,7 +53,7 @@ test('drag and drop upload normal and special characters', async ({page}) => {
   await expect(page.getByRole('link', {name: 'special/Ʉ₦ł₵ØĐɆ.txt'})).toBeVisible();
   // Since this is a file in root, there two links with the same label
   // we take the on in #diff-file-tree
-  await expect(page.locator('#diff-file-tree').getByRole('link', {name: 'root_file.txt'})).toBeVisible();
+  await expect(page.locator('#diff-file-boxes').getByRole('link', {name: 'root_file.txt'})).toBeVisible();
 });
 
 test('drag and drop upload strange paths and spaces', async ({page}) => {
@@ -83,11 +83,11 @@ test('drag and drop upload strange paths and spaces', async ({page}) => {
   // check that nested file structure is preserved
   // Since this is a file in root, there two links with the same label
   // we take the on in #diff-file-tree
-  await expect(page.locator('#diff-file-tree').getByRole('link', {name: '.dots.vanish.txt'})).toBeVisible();
+  await expect(page.locator('#diff-file-boxes').getByRole('link', {name: '.dots.vanish.txt'})).toBeVisible();
   await expect(page.getByRole('link', {name: 'special/S P  A   C   E    !.txt'})).toBeVisible();
   // Since this is a file in root, there two links with the same label
   // we take the on in #diff-file-tree
-  await expect(page.locator('#diff-file-tree').getByRole('link', {name: '..dots.txt'})).toBeVisible();
+  await expect(page.locator('#diff-file-boxes').getByRole('link', {name: '..dots.txt'})).toBeVisible();
 });
 
 test('drag and drop upload broken path slash in front', async ({page}) => {
