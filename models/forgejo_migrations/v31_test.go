@@ -16,8 +16,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"xorm.io/xorm"
-	"xorm.io/xorm/schemas"
 )
 
 type readSeekCloser struct {
@@ -131,8 +129,6 @@ func Test_ChangeMavenArtifactConcatenation(t *testing.T) {
 		return
 	}
 
-	assertDatabaseIDEqual := createAssertIDEqual(t, x)
-
 	cnt, err := x.Table("package").Count()
 	require.NoError(t, err)
 	assert.EqualValues(t, 8, cnt)
@@ -153,23 +149,22 @@ func Test_ChangeMavenArtifactConcatenation(t *testing.T) {
 
 	var pks []*packages.Package
 	require.NoError(t, x.OrderBy("id").Find(&pks))
-	validatePackages(t, pks, assertDatabaseIDEqual)
+	validatePackages(t, pks)
 
 	var pvs []*packages.PackageVersion
 	require.NoError(t, x.OrderBy("id").Find(&pvs))
-	validatePackageVersions(t, pvs, assertDatabaseIDEqual)
+	validatePackageVersions(t, pvs)
 
 	var pfs []*packages.PackageFile
 	require.NoError(t, x.OrderBy("id").Find(&pfs))
-	validatePackageFiles(t, pfs, assertDatabaseIDEqual)
+	validatePackageFiles(t, pfs)
 }
 
-func validatePackages(t *testing.T, pbs []*packages.Package, assertDatabaseIDEqual assertIDEqual) {
+func validatePackages(t *testing.T, pbs []*packages.Package) {
 	assertPackage := func(id, ownerID, repoID int64, name string) {
-		exitingEntries := int64(8)
 		pb := pbs[id-1]
 
-		assertDatabaseIDEqual(id, pb.ID, exitingEntries)
+		require.Equal(t, id, pb.ID)
 		require.Equal(t, ownerID, pb.OwnerID)
 		require.Equal(t, repoID, pb.RepoID)
 		require.Equal(t, name, pb.Name)
@@ -194,16 +189,14 @@ func validatePackages(t *testing.T, pbs []*packages.Package, assertDatabaseIDEqu
 	assertPackage(10, 1, 0, "foo-:bar")
 }
 
-func validatePackageVersions(t *testing.T, pvs []*packages.PackageVersion, assertDatabaseIDEqual assertIDEqual) {
+func validatePackageVersions(t *testing.T, pvs []*packages.PackageVersion) {
 	require.Len(t, pvs, 38)
 
 	assertPackageVersion := func(id, packageId, creatorId, createdUnix int64, version, metadata string) {
-		pvMaxEntries := int64(31)
-		pMaxEntries := int64(8)
 		pv := pvs[id-1]
 
-		assertDatabaseIDEqual(id, pv.ID, pvMaxEntries)
-		assertDatabaseIDEqual(packageId, pv.PackageID, pMaxEntries)
+		require.Equal(t, id, pv.ID)
+		require.Equal(t, packageId, pv.PackageID)
 
 		require.Equal(t, creatorId, pv.CreatorID)
 		require.Equal(t, version, pv.Version)
@@ -261,14 +254,12 @@ func validatePackageVersions(t *testing.T, pvs []*packages.PackageVersion, asser
 	assertPackageVersion(38, 10, 1, 1746256488, "1.0-SNAPSHOT", `{"artifact_id":"bar","group_id":"foo-"}`)
 }
 
-func validatePackageFiles(t *testing.T, pfs []*packages.PackageFile, assertDatabaseIDEqual assertIDEqual) {
+func validatePackageFiles(t *testing.T, pfs []*packages.PackageFile) {
 	assertPackageVersion := func(pos, id, versionId, blobId, createdUnix int64, name string, isLead bool) {
 		pf := pfs[pos]
 
-		pvMaxEntries := int64(31)
-
 		require.Equal(t, id, pf.ID)
-		assertDatabaseIDEqual(versionId, pf.VersionID, pvMaxEntries)
+		require.Equal(t, versionId, pf.VersionID)
 		require.Equal(t, blobId, pf.BlobID)
 		require.Equal(t, name, pf.Name)
 		require.Equal(t, strings.ToLower(name), pf.LowerName)
@@ -375,23 +366,4 @@ func validatePackageFiles(t *testing.T, pfs []*packages.PackageFile, assertDatab
 	// new versionId 31 -> 32
 	assertPackageVersion(85, 103, 32, 79, 1746280832, "bar-art-11.0.0.pom", true)
 	assertPackageVersion(86, 104, 31, 80, 1746280843, "art-11.0.0.pom", true)
-}
-
-type assertIDEqual func(expectedID, actual, maxEntries int64)
-
-func createAssertIDEqual(t *testing.T, x *xorm.Engine) assertIDEqual {
-	switch x.Dialect().URI().DBType {
-	case schemas.MYSQL:
-		return func(expectedID, actual, maxEntries int64) {
-			if expectedID > maxEntries {
-				// mysql ids starting with offset = 10000 - [max entries]
-				expectedID += 9999 - maxEntries
-			}
-			require.Equal(t, expectedID, actual)
-		}
-	default:
-		return func(expectedID, actual, _ int64) {
-			require.Equal(t, expectedID, actual)
-		}
-	}
 }
